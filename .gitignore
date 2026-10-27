@@ -58,3 +58,11 @@ prisma/*.db-journal
 
 # Debugging
 debug/
+
+
+# Local AI agent configurations
+.agents/
+.claude/
+.cursor/
+.devin/
+
