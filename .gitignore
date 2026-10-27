@@ -1,0 +1,60 @@
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+coverage/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Operating system
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs and editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Testing
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+# Prisma local development artifacts
+prisma/*.db
+prisma/*.db-journal
+
+# Local databases
+*.sqlite
+*.sqlite3
+
+# Local certificates and private keys
+*.pem
+*.key
+*.crt
+
+# Debugging
+debug/
