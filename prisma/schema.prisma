@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
+}
+
+enum BoardStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum BoardMemberRole {
+  OWNER
+  PARTNER
+}
+
+enum BoardMemberStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum MemoryType {
+  NOTE
+  PHOTO
+  GIF
+}
+
+enum MediaType {
+  PHOTO
+  GIF
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  sentInvitations     Invitation[]  @relation("InvitationSender")
+  receivedInvitations Invitation[]  @relation("InvitationRecipient")
+  boardMemberships    BoardMember[]
+  memories            Memory[]
+
+  @@map("users")
+}
+
+model Invitation {
+  id             String           @id @default(uuid()) @db.Uuid
+  senderId       String           @map("sender_id") @db.Uuid
+  recipientId    String?          @map("recipient_id") @db.Uuid
+  recipientEmail String           @map("recipient_email") @db.VarChar(255)
+  tokenHash      String           @unique @map("token_hash") @db.VarChar(255)
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime         @map("expires_at")
+  acceptedAt     DateTime?        @map("accepted_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  sender    User  @relation("InvitationSender", fields: [senderId], references: [id], onDelete: Restrict)
+  recipient User? @relation("InvitationRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([senderId, status])
+  @@index([recipientEmail, status])
+  @@map("invitations")
+}
+
+model Board {
+  id             String      @id @default(uuid()) @db.Uuid
+  name           String      @db.VarChar(201)
+  status         BoardStatus @default(ACTIVE)
+  photoLimit     Int         @default(15) @map("photo_limit")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  members  BoardMember[]
+  memories Memory[]
+
+  @@index([status, createdAt])
+  @@map("boards")
+}
+
+model BoardMember {
+  id        String           @id @default(uuid()) @db.Uuid
+  boardId   String           @map("board_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  role      BoardMemberRole
+  status    BoardMemberStatus @default(ACTIVE)
+  joinedAt  DateTime         @default(now()) @map("joined_at")
+  archivedAt DateTime?       @map("archived_at")
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Restrict)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([boardId, userId])
+  @@index([userId, status])
+  @@index([boardId, status])
+  @@map("board_members")
+}
+
+model Memory {
+  id        String     @id @default(uuid()) @db.Uuid
+  boardId   String     @map("board_id") @db.Uuid
+  authorId  String     @map("author_id") @db.Uuid
+  type      MemoryType
+  text      String?    @db.Text
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  board Board         @relation(fields: [boardId], references: [id], onDelete: Restrict)
+  author User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  media MemoryMedia[]
+
+  @@index([boardId, createdAt])
+  @@index([authorId])
+  @@map("memories")
+}
+
+model MemoryMedia {
+  id         String    @id @default(uuid()) @db.Uuid
+  memoryId   String    @map("memory_id") @db.Uuid
+  mediaType  MediaType @map("media_type")
+  storageKey String    @map("storage_key") @db.VarChar(500)
+  position   Int       @default(0)
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@index([memoryId, position])
+  @@map("memory_media")
+}
