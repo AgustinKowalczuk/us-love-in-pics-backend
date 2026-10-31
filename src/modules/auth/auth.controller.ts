@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 
-import { registerUser } from "./auth.service.js";
+import { registerUser, loginUser } from "./auth.service.js";
 
 export const registerController: RequestHandler = async(req, res, next)=>{
     try{
@@ -48,4 +48,46 @@ export const registerController: RequestHandler = async(req, res, next)=>{
         }
         next(error);
     }
+};
+
+export const loginController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const user = await loginUser(req.body);
+
+    if (!user) {
+      res.status(401).json({
+        status: "error",
+        message: "Invalid email or password",
+      });
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((error) => {
+        if (error) return reject(error);
+        resolve();
+      });
+    });
+
+    req.session.userId = user.id;
+
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((error) => {
+        if (error) return reject(error);
+        resolve();
+      });
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: "User logged in successfully",
+      data: { user },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
