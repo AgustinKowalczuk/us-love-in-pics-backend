@@ -1,7 +1,7 @@
 import argon2 from "argon2";
 
 import { prisma } from "../../config/prisma.js";
-import type { RegisterInput } from "../../schemas/auth.schema.js";
+import type { RegisterInput, LoginInput } from "../../schemas/auth.schema.js";
 
 export async function registerUser(input: RegisterInput) {
     const existingUser = await prisma.user.findUnique({
@@ -31,3 +31,23 @@ export async function registerUser(input: RegisterInput) {
     return user;
 }
 
+export async function loginUser(input: LoginInput){
+    const user= await prisma.user.findUnique({
+        where:{
+            email: input.email,
+        },
+    });
+
+    if(!user) return null;
+
+    const isPasswordValid = await argon2.verify(
+        user.passwordHash,
+        input.password
+    )
+
+    if(!isPasswordValid) return null;
+
+    const {passwordHash, ...publicUser}= user;
+
+    return publicUser;
+}

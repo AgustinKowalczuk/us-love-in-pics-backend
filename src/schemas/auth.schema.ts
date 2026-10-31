@@ -6,6 +6,7 @@ import {
   passwordSchema,
 } from "./common.schema.js";
 
+//register schema
 export const registerSchema = z.object({
   name: nameSchema,
   email: emailSchema,
@@ -13,3 +14,11 @@ export const registerSchema = z.object({
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+//login schema
+export const loginSchema=z.object({
+  email: emailSchema,
+  password: passwordSchema,
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
