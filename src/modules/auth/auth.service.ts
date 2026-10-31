@@ -51,3 +51,17 @@ export async function loginUser(input: LoginInput){
 
     return publicUser;
 }
+
+export async function getAuthenticatedUser(userId:string){
+    return prisma.user.findUnique({
+        where:{
+            id: userId,
+        },
+        select:{
+            id: true,
+            name: true,
+            email: true,
+            createdAt: true,
+        }
+    });
+}
