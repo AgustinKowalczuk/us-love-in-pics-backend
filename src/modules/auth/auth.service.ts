@@ -10,7 +10,7 @@ export async function registerUser(input: RegisterInput) {
         },
     });
 
-    if(existingUser) throw new Error("Email Already Registered");
+    if(existingUser) throw new Error("EMAIL_ALREADY_REGISTERED");
 
     const passwordHash = await argon2.hash(input.password);
 
