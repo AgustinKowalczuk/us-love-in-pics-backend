@@ -3,10 +3,11 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
-import apiRouter from "./routes/index.js";
-import { errorHandler } from "./middlewares/error-handler.js";
 import { env } from "./config/env.js";
 import { sessionMiddleware } from "./config/session.js";
+import { errorHandler } from "./middlewares/error-handler.js";
+
+import apiRouter from "./routes/index.js";
 
 export const app = express();
 
@@ -27,6 +28,7 @@ app.use(
 );
 
 app.use(express.json({ limit: "1mb" }));
+
 app.use(sessionMiddleware);
 
 //routes
