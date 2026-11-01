@@ -1,50 +1,51 @@
+
 import { z } from "zod";
 
 /**
- * Validación de identificadores UUID.
+ * UUID identifier validation.
  */
 export const uuidSchema = z
   .string()
-  .uuid("El identificador proporcionado no es válido");
+  .uuid("The provided identifier is invalid");
 
 /**
- * Validación de nombres personales.
+ * Personal name validation.
  */
 export const nameSchema = z
   .string()
   .trim()
-  .min(2, "El nombre debe tener al menos 2 caracteres")
-  .max(60, "El nombre no puede superar los 60 caracteres");
+  .min(2, "Name must contain at least 2 characters")
+  .max(60, "Name cannot exceed 60 characters");
 
 /**
- * Validación de direcciones de correo electrónico.
+ * Email address validation.
  */
 export const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .email("El correo electrónico no es válido")
-  .max(254, "El correo electrónico es demasiado largo");
+  .email("Invalid email address")
+  .max(254, "Email address is too long");
 
 /**
- * Validación de contraseñas.
+ * Password validation.
  */
 export const passwordSchema = z
   .string()
-  .min(8, "La contraseña debe tener al menos 8 caracteres")
-  .max(128, "La contraseña no puede superar los 128 caracteres");
+  .min(8, "Password must contain at least 8 characters")
+  .max(128, "Password cannot exceed 128 characters");
 
 /**
- * Validación de nombres de tableros.
+ * Board name validation.
  */
 export const boardNameSchema = z
   .string()
   .trim()
-  .min(3, "El nombre del tablero debe tener al menos 3 caracteres")
-  .max(100, "El nombre del tablero no puede superar los 100 caracteres");
+  .min(3, "Board name must contain at least 3 characters")
+  .max(100, "Board name cannot exceed 100 characters");
 
 /**
- * Validación de ejemplo.
+ * Example validation schema.
  */
 export const exampleSchema = z.object({
   name: nameSchema,
