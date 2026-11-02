@@ -402,7 +402,7 @@ export const ModelName = {
   Board: 'Board',
   BoardMember: 'BoardMember',
   Memory: 'Memory',
-  MemoryMedia: 'MemoryMedia'
+  MemoryMedia: 'MemoryMedia',
   EmailVerificationToken: 'EmailVerificationToken'
 } as const
 
@@ -1003,8 +1003,8 @@ export const InvitationScalarFieldEnum = {
   status: 'status',
   expiresAt: 'expiresAt',
   acceptedAt: 'acceptedAt',
-  createdAt: 'createdAt'
   respondedAt: 'respondedAt',
+  createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 

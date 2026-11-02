@@ -18,11 +18,11 @@ export const registerController: RequestHandler = async (req, res, next) => {
           reject(error);
           return;
         }
+
         resolve();
       });
     });
 
-    //session assignment with user registration
     req.session.userId = user.id;
 
     // Persist the session before responding.
@@ -40,9 +40,7 @@ export const registerController: RequestHandler = async (req, res, next) => {
     res.status(201).json({
       status: "success",
       message: "User registration successful",
-      data: {
-        user,
-      },
+      data: { user },
     });
   } catch (error) {
     if (
@@ -121,7 +119,6 @@ export const meController: RequestHandler = async (req, res, next) => {
     const user = await getAuthenticatedUser(userId);
 
     if (!user) {
-      // Keep your existing invalid-session handling here.
       req.session.destroy((error) => {
         if (error) {
           next(error);

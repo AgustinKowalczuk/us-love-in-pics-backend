@@ -59,18 +59,19 @@ model User {
   @@map("users")
 }
 
+
 model Invitation {
-  id             String           @id @default(uuid()) @db.Uuid
-  senderId       String           @map("sender_id") @db.Uuid
-  recipientId    String?          @map("recipient_id") @db.Uuid
-  recipientEmail String           @map("recipient_email") @db.VarChar(255)
-  status         InvitationStatus @default(PENDING)
-  expiresAt      DateTime         @map("expires_at")
-  acceptedAt     DateTime?        @map("accepted_at")
-  createdAt      DateTime         @default(now()) @map("created_at")
+  id              String           @id @default(uuid()) @db.Uuid
+  senderId        String           @map("sender_id") @db.Uuid
+  recipientId     String?          @map("recipient_id") @db.Uuid
+  recipientEmail  String           @map("recipient_email") @db.VarChar(255)
   tokenHash       String           @unique @map("token_hash") @db.VarChar(64)
   tokenEncrypted  String           @map("token_encrypted") @db.Text
+  status          InvitationStatus @default(PENDING)
+  expiresAt       DateTime         @map("expires_at")
+  acceptedAt      DateTime?        @map("accepted_at")
   respondedAt     DateTime?        @map("responded_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
   sender    User  @relation("InvitationSender", fields: [senderId], references: [id], onDelete: Restrict)
@@ -98,13 +99,13 @@ model Board {
 }
 
 model BoardMember {
-  id        String           @id @default(uuid()) @db.Uuid
-  boardId   String           @map("board_id") @db.Uuid
-  userId    String           @map("user_id") @db.Uuid
-  role      BoardMemberRole
-  status    BoardMemberStatus @default(ACTIVE)
-  joinedAt  DateTime         @default(now()) @map("joined_at")
-  archivedAt DateTime?       @map("archived_at")
+  id         String            @id @default(uuid()) @db.Uuid
+  boardId    String            @map("board_id") @db.Uuid
+  userId     String            @map("user_id") @db.Uuid
+  role       BoardMemberRole
+  status     BoardMemberStatus @default(ACTIVE)
+  joinedAt   DateTime          @default(now()) @map("joined_at")
+  archivedAt DateTime?         @map("archived_at")
 
   board Board @relation(fields: [boardId], references: [id], onDelete: Restrict)
   user  User  @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -124,9 +125,9 @@ model Memory {
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
-  board Board         @relation(fields: [boardId], references: [id], onDelete: Restrict)
-  author User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  media MemoryMedia[]
+  board  Board         @relation(fields: [boardId], references: [id], onDelete: Restrict)
+  author User          @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  media  MemoryMedia[]
 
   @@index([boardId, createdAt])
   @@index([authorId])

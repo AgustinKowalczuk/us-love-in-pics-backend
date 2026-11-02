@@ -7,6 +7,7 @@ import emailVerificationRoutes from "../modules/email-verification/email-verific
 const apiRouter = Router();
 
 apiRouter.use("/auth",authRoutes);
+apiRouter.use("/health", healthRouter);
 apiRouter.use("/email-verification", emailVerificationRoutes);
 
 export default apiRouter;
