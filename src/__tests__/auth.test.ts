@@ -5,6 +5,12 @@ import { prisma } from "../config/prisma.js";
 import { app } from "../app.js";
 
 beforeEach(async () => {
+  await prisma.memoryMedia.deleteMany();
+  await prisma.memory.deleteMany();
+  await prisma.boardMember.deleteMany();
+  await prisma.board.deleteMany();
+  await prisma.invitation.deleteMany();
+  await prisma.emailVerificationToken.deleteMany();
   await prisma.user.deleteMany();
 });
 

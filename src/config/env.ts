@@ -19,6 +19,17 @@ const envSchema = z.object({
 
   SESSION_MAX_AGE: z.coerce.number().int().positive().default(604800000),
 
+  INVITATION_ENCRYPTION_KEY: z
+    .string()
+    .regex(
+      /^[A-Za-z0-9+/]{43}=$/,
+      "INVITATION_ENCRYPTION_KEY must be a valid Base64-encoded 32-byte key",
+    )
+    .refine(
+      (value) => Buffer.from(value, "base64").length === 32,
+      "INVITATION_ENCRYPTION_KEY must contain exactly 32 bytes",
+    ),
+
   SMTP_HOST: z.string().min(1, "SMTP_HOST is required"),
 
   SMTP_PORT: z.coerce.number().int().positive(),
