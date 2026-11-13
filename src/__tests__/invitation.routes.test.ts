@@ -50,13 +50,14 @@ async function createVerifiedAgent(email = "agustin@example.com") {
 async function createPendingInvitation(
   senderId: string,
   token = "test-invitation-token",
+  recipientEmail = "mayra@example.com",
 ) {
   const oldDate = new Date(Date.now() - 10 * 60 * 1000);
 
   return prisma.invitation.create({
     data: {
       senderId,
-      recipientEmail: "mayra@example.com",
+      recipientEmail,
       tokenHash: createHash("sha256").update(token).digest("hex"),
       tokenEncrypted: encryptInvitationToken(token),
       expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
@@ -211,6 +212,110 @@ describe("Invitation routes", () => {
       );
 
       expect(response.status).toBe(404);
+    });
+  });
+
+    describe("GET /api/v1/invitations/received", () => {
+    it("returns invitations addressed to the authenticated user", async () => {
+      const { agent: recipientAgent } = await createVerifiedAgent(
+        "mayra@example.com",
+      );
+
+      const { user: sender } = await createVerifiedAgent(
+        "agustin@example.com",
+      );
+
+      const { user: anotherSender } = await createVerifiedAgent(
+        "another@example.com",
+      );
+
+      const invitation = await createPendingInvitation(
+        sender.id,
+        "recipient-invitation-token",
+        "mayra@example.com",
+      );
+
+      await createPendingInvitation(
+        anotherSender.id,
+        "another-recipient-token",
+        "someone@example.com",
+      );
+
+      const response = await recipientAgent.get(
+        "/api/v1/invitations/received",
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.invitations).toHaveLength(1);
+      expect(response.body.data.invitations[0].id).toBe(invitation.id);
+      expect(response.body.data.invitations[0].sender.name).toBe("Agustin");
+    });
+
+    it("rejects unauthenticated requests", async () => {
+      const response = await request(app).get(
+        "/api/v1/invitations/received",
+      );
+
+      expect(response.status).toBe(401);
+    });
+
+    it("rejects users with unverified email addresses", async () => {
+      const agent = request.agent(app);
+
+      await agent.post("/api/v1/auth/register").send({
+        name: "Mayra",
+        email: "mayra@example.com",
+        password: "MyPassword123!",
+      });
+
+      const response = await agent.get(
+        "/api/v1/invitations/received",
+      );
+
+      expect(response.status).toBe(403);
+    });
+
+    it("returns an empty list when the user has no received invitations", async () => {
+      const { agent } = await createVerifiedAgent("mayra@example.com");
+
+      const response = await agent.get(
+        "/api/v1/invitations/received",
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.invitations).toEqual([]);
+    });
+
+    it("does not expose sensitive invitation data", async () => {
+      const { agent: recipientAgent } = await createVerifiedAgent(
+        "mayra@example.com",
+      );
+
+      const { user: sender } = await createVerifiedAgent();
+
+      await createPendingInvitation(
+        sender.id,
+        "private-invitation-token",
+      );
+
+      const response = await recipientAgent.get(
+        "/api/v1/invitations/received",
+      );
+
+      expect(response.status).toBe(200);
+
+      const invitation = response.body.data.invitations[0];
+
+      expect(invitation).toHaveProperty("id");
+      expect(invitation).toHaveProperty("recipientEmail");
+      expect(invitation).toHaveProperty("status");
+      expect(invitation).toHaveProperty("sender");
+
+      expect(invitation).not.toHaveProperty("tokenHash");
+      expect(invitation).not.toHaveProperty("tokenEncrypted");
+      expect(invitation).not.toHaveProperty("recipientId");
     });
   });
 });
