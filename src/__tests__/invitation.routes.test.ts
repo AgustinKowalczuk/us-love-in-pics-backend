@@ -1,0 +1,723 @@
+import request from "supertest";
+import { createHash } from "node:crypto";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// Mock the mailer before importing the application.
+vi.mock("../config/mailer.js", () => ({
+  mailer: {
+    sendMail: vi.fn(),
+  },
+}));
+
+import { app } from "../app.js";
+import { prisma } from "../config/prisma.js";
+import { mailer } from "../config/mailer.js";
+import { encryptInvitationToken } from "../modules/invitations/invitation-crypto.js";
+
+const mockedSendMail = vi.mocked(mailer.sendMail);
+
+async function cleanDatabase() {
+  await prisma.memoryMedia.deleteMany();
+  await prisma.memory.deleteMany();
+  await prisma.boardMember.deleteMany();
+  await prisma.board.deleteMany();
+  await prisma.invitation.deleteMany();
+  await prisma.emailVerificationToken.deleteMany();
+  await prisma.user.deleteMany();
+}
+
+async function createVerifiedAgent(email = "agustin@example.com") {
+  const agent = request.agent(app);
+
+  const registration = await agent.post("/api/v1/auth/register").send({
+    name: "Agustin",
+    email,
+    password: "MyPassword123!",
+  });
+
+  expect(registration.status).toBe(201);
+
+  const user = await prisma.user.update({
+    where: { email },
+    data: {
+      emailVerifiedAt: new Date(),
+    },
+  });
+
+  return { agent, user };
+}
+
+async function createPendingInvitation(
+  senderId: string,
+  token = "test-invitation-token",
+  recipientEmail = "mayra@example.com",
+) {
+  const oldDate = new Date(Date.now() - 10 * 60 * 1000);
+
+  return prisma.invitation.create({
+    data: {
+      senderId,
+      recipientEmail,
+      tokenHash: createHash("sha256").update(token).digest("hex"),
+      tokenEncrypted: encryptInvitationToken(token),
+      expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
+      createdAt: oldDate,
+      updatedAt: oldDate,
+    },
+  });
+}
+
+/**
+ * Creates an active board membership for a user.
+ */
+async function createActiveBoard(userId: string) {
+  const board = await prisma.board.create({
+    data: {
+      name: "Existing&Partner",
+      status: "ACTIVE",
+    },
+  });
+
+  await prisma.boardMember.create({
+    data: {
+      boardId: board.id,
+      userId,
+      role: "OWNER",
+      status: "ACTIVE",
+    },
+  });
+
+  return board;
+}
+
+beforeEach(async () => {
+  await cleanDatabase();
+  vi.clearAllMocks();
+  mockedSendMail.mockResolvedValue({} as never);
+});
+
+describe("Invitation routes", () => {
+  describe("POST /api/v1/invitations", () => {
+    it("creates an invitation for a verified user", async () => {
+      const { agent } = await createVerifiedAgent();
+
+      const response = await agent.post("/api/v1/invitations").send({
+        recipientEmail: "mayra@example.com",
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.invitation.recipientEmail).toBe(
+        "mayra@example.com",
+      );
+
+      expect(mockedSendMail).toHaveBeenCalledOnce();
+    });
+
+    it("rejects unauthenticated requests", async () => {
+      const response = await request(app).post("/api/v1/invitations").send({
+        recipientEmail: "mayra@example.com",
+      });
+
+      expect(response.status).toBe(401);
+      expect(mockedSendMail).not.toHaveBeenCalled();
+    });
+
+    it("rejects users with unverified email addresses", async () => {
+      const agent = request.agent(app);
+
+      await agent.post("/api/v1/auth/register").send({
+        name: "Agustin",
+        email: "agustin@example.com",
+        password: "MyPassword123!",
+      });
+
+      const response = await agent.post("/api/v1/invitations").send({
+        recipientEmail: "mayra@example.com",
+      });
+
+      expect(response.status).toBe(403);
+      expect(mockedSendMail).not.toHaveBeenCalled();
+    });
+
+    it("rejects invalid request bodies", async () => {
+      const { agent } = await createVerifiedAgent();
+
+      const response = await agent.post("/api/v1/invitations").send({
+        recipientEmail: "invalid-email",
+      });
+
+      expect(response.status).toBe(400);
+      expect(mockedSendMail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("POST /api/v1/invitations/:id/resend", () => {
+    it("resends a pending invitation", async () => {
+      const { agent, user } = await createVerifiedAgent();
+
+      const invitation = await createPendingInvitation(user.id);
+
+      const response = await agent.post(
+        `/api/v1/invitations/${invitation.id}/resend`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.invitation.id).toBe(invitation.id);
+      expect(response.body.data.nextResendAt).toBeDefined();
+
+      expect(mockedSendMail).toHaveBeenCalledOnce();
+    });
+
+    it("rejects requests while the resend cooldown is active", async () => {
+      const { agent, user } = await createVerifiedAgent();
+
+      const invitation = await prisma.invitation.create({
+        data: {
+          senderId: user.id,
+          recipientEmail: "mayra@example.com",
+          tokenHash: createHash("sha256")
+            .update("cooldown-token")
+            .digest("hex"),
+          tokenEncrypted: encryptInvitationToken("cooldown-token"),
+          expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
+        },
+      });
+
+      const response = await agent.post(
+        `/api/v1/invitations/${invitation.id}/resend`,
+      );
+
+      expect(response.status).toBe(429);
+      expect(mockedSendMail).not.toHaveBeenCalled();
+    });
+
+    it("rejects invalid invitation IDs", async () => {
+      const { agent } = await createVerifiedAgent();
+
+      const response = await agent.post(
+        "/api/v1/invitations/invalid-id/resend",
+      );
+
+      expect(response.status).toBe(400);
+      expect(mockedSendMail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("DELETE /api/v1/invitations/:id", () => {
+    it("cancels a pending invitation", async () => {
+      const { agent, user } = await createVerifiedAgent();
+
+      const invitation = await createPendingInvitation(user.id);
+
+      const response = await agent.delete(
+        `/api/v1/invitations/${invitation.id}`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.invitationId).toBe(invitation.id);
+
+      const savedInvitation = await prisma.invitation.findUnique({
+        where: { id: invitation.id },
+      });
+
+      expect(savedInvitation?.status).toBe("CANCELLED");
+      expect(savedInvitation?.respondedAt).not.toBeNull();
+    });
+
+    it("returns 404 when the invitation does not exist", async () => {
+      const { agent } = await createVerifiedAgent();
+
+      const response = await agent.delete(
+        "/api/v1/invitations/00000000-0000-4000-8000-000000000000",
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe("GET /api/v1/invitations/received", () => {
+    it("returns invitations addressed to the authenticated user", async () => {
+      const { agent: recipientAgent } =
+        await createVerifiedAgent("mayra@example.com");
+
+      const { user: sender } = await createVerifiedAgent("agustin@example.com");
+
+      const { user: anotherSender } = await createVerifiedAgent(
+        "another@example.com",
+      );
+
+      const invitation = await createPendingInvitation(
+        sender.id,
+        "recipient-invitation-token",
+        "mayra@example.com",
+      );
+
+      await createPendingInvitation(
+        anotherSender.id,
+        "another-recipient-token",
+        "someone@example.com",
+      );
+
+      const response = await recipientAgent.get("/api/v1/invitations/received");
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.invitations).toHaveLength(1);
+      expect(response.body.data.invitations[0].id).toBe(invitation.id);
+      expect(response.body.data.invitations[0].sender.name).toBe("Agustin");
+    });
+
+    it("rejects unauthenticated requests", async () => {
+      const response = await request(app).get("/api/v1/invitations/received");
+
+      expect(response.status).toBe(401);
+    });
+
+    it("rejects users with unverified email addresses", async () => {
+      const agent = request.agent(app);
+
+      await agent.post("/api/v1/auth/register").send({
+        name: "Mayra",
+        email: "mayra@example.com",
+        password: "MyPassword123!",
+      });
+
+      const response = await agent.get("/api/v1/invitations/received");
+
+      expect(response.status).toBe(403);
+    });
+
+    it("returns an empty list when the user has no received invitations", async () => {
+      const { agent } = await createVerifiedAgent("mayra@example.com");
+
+      const response = await agent.get("/api/v1/invitations/received");
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.invitations).toEqual([]);
+    });
+
+    it("does not expose sensitive invitation data", async () => {
+      const { agent: recipientAgent } =
+        await createVerifiedAgent("mayra@example.com");
+
+      const { user: sender } = await createVerifiedAgent();
+
+      await createPendingInvitation(sender.id, "private-invitation-token");
+
+      const response = await recipientAgent.get("/api/v1/invitations/received");
+
+      expect(response.status).toBe(200);
+
+      const invitation = response.body.data.invitations[0];
+
+      expect(invitation).toHaveProperty("id");
+      expect(invitation).toHaveProperty("recipientEmail");
+      expect(invitation).toHaveProperty("status");
+      expect(invitation).toHaveProperty("sender");
+
+      expect(invitation).not.toHaveProperty("tokenHash");
+      expect(invitation).not.toHaveProperty("tokenEncrypted");
+      expect(invitation).not.toHaveProperty("recipientId");
+    });
+  });
+
+  describe("GET /api/v1/invitations/token/:token", () => {
+    it("returns invitation details using a valid token", async () => {
+      const { user: sender } = await createVerifiedAgent();
+
+      const token = "a".repeat(64);
+
+      const invitation = await createPendingInvitation(sender.id, token);
+
+      const response = await request(app).get(
+        `/api/v1/invitations/token/${token}`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.invitation.id).toBe(invitation.id);
+      expect(response.body.data.invitation.status).toBe("PENDING");
+      expect(response.body.data.invitation.sender.name).toBe("Agustin");
+    });
+
+    it("returns 404 when the token does not exist", async () => {
+      const response = await request(app).get(
+        `/api/v1/invitations/token/${"a".repeat(64)}`,
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it("rejects malformed tokens", async () => {
+      const response = await request(app).get(
+        "/api/v1/invitations/token/invalid-token",
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("marks expired invitations as expired", async () => {
+      const { user: sender } = await createVerifiedAgent();
+
+      const token = "b".repeat(64);
+
+      const invitation = await createPendingInvitation(sender.id, token);
+
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: {
+          expiresAt: new Date(Date.now() - 1000),
+        },
+      });
+
+      const response = await request(app).get(
+        `/api/v1/invitations/token/${token}`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.invitation.status).toBe("EXPIRED");
+
+      const savedInvitation = await prisma.invitation.findUnique({
+        where: { id: invitation.id },
+      });
+
+      expect(savedInvitation?.status).toBe("EXPIRED");
+    });
+
+    it("does not expose sensitive invitation data", async () => {
+      const { user: sender } = await createVerifiedAgent();
+
+      const token = "c".repeat(64);
+
+      await createPendingInvitation(sender.id, token);
+
+      const response = await request(app).get(
+        `/api/v1/invitations/token/${token}`,
+      );
+
+      expect(response.status).toBe(200);
+
+      const invitation = response.body.data.invitation;
+
+      expect(invitation).not.toHaveProperty("tokenHash");
+      expect(invitation).not.toHaveProperty("tokenEncrypted");
+      expect(invitation).not.toHaveProperty("recipientId");
+      expect(invitation).not.toHaveProperty("recipientEmail");
+    });
+  });
+
+  describe("POST /api/v1/invitations/:id/accept", () => {
+    it("accepts a pending invitation for the authenticated recipient", async () => {
+      const { agent: recipientAgent, user: recipient } =
+        await createVerifiedAgent("mayra@example.com");
+
+      const { user: sender } = await createVerifiedAgent();
+
+      const invitation = await createPendingInvitation(
+        sender.id,
+        "accept-invitation-token",
+        "mayra@example.com",
+      );
+
+      const response = await recipientAgent.post(
+        `/api/v1/invitations/${invitation.id}/accept`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+
+      const savedInvitation = await prisma.invitation.findUnique({
+        where: { id: invitation.id },
+      });
+
+      expect(savedInvitation?.status).toBe("ACCEPTED");
+      expect(savedInvitation?.recipientId).toBe(recipient.id);
+      expect(savedInvitation?.acceptedAt).not.toBeNull();
+      expect(savedInvitation?.respondedAt).not.toBeNull();
+    });
+
+    it("rejects unauthenticated requests", async () => {
+      const response = await request(app).post(
+        "/api/v1/invitations/00000000-0000-4000-8000-000000000000/accept",
+      );
+
+      expect(response.status).toBe(401);
+    });
+
+    it("rejects users with unverified email addresses", async () => {
+      const agent = request.agent(app);
+
+      await agent.post("/api/v1/auth/register").send({
+        name: "Mayra",
+        email: "mayra@example.com",
+        password: "MyPassword123!",
+      });
+
+      const response = await agent.post(
+        "/api/v1/invitations/00000000-0000-4000-8000-000000000000/accept",
+      );
+
+      expect(response.status).toBe(403);
+    });
+
+    it("rejects invalid invitation IDs", async () => {
+      const { agent } = await createVerifiedAgent("mayra@example.com");
+
+      const response = await agent.post(
+        "/api/v1/invitations/invalid-id/accept",
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 404 when the invitation does not exist", async () => {
+      const { agent } = await createVerifiedAgent("mayra@example.com");
+
+      const response = await agent.post(
+        "/api/v1/invitations/00000000-0000-4000-8000-000000000000/accept",
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it("returns 410 when the invitation has expired", async () => {
+      const { agent: recipientAgent } =
+        await createVerifiedAgent("mayra@example.com");
+
+      const { user: sender } = await createVerifiedAgent();
+
+      const invitation = await createPendingInvitation(
+        sender.id,
+        "expired-accept-token",
+        "mayra@example.com",
+      );
+
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: {
+          expiresAt: new Date(Date.now() - 1000),
+        },
+      });
+
+      const response = await recipientAgent.post(
+        `/api/v1/invitations/${invitation.id}/accept`,
+      );
+
+      expect(response.status).toBe(410);
+
+      const savedInvitation = await prisma.invitation.findUnique({
+        where: { id: invitation.id },
+      });
+
+      expect(savedInvitation?.status).toBe("EXPIRED");
+    });
+
+    it("rejects acceptance when the sender already belongs to an active board", async () => {
+      const { agent: recipientAgent } =
+        await createVerifiedAgent("mayra@example.com");
+
+      const { user: sender } = await createVerifiedAgent();
+
+      await createActiveBoard(sender.id);
+
+      const invitation = await createPendingInvitation(
+        sender.id,
+        "sender-active-board-token",
+        "mayra@example.com",
+      );
+
+      const response = await recipientAgent.post(
+        `/api/v1/invitations/${invitation.id}/accept`,
+      );
+
+      expect(response.status).toBe(409);
+    });
+
+    it("rejects acceptance when the recipient already belongs to an active board", async () => {
+      const { agent: recipientAgent, user: recipient } =
+        await createVerifiedAgent("mayra@example.com");
+
+      const { user: sender } = await createVerifiedAgent();
+
+      await createActiveBoard(recipient.id);
+
+      const invitation = await createPendingInvitation(
+        sender.id,
+        "recipient-active-board-token",
+        "mayra@example.com",
+      );
+
+      const response = await recipientAgent.post(
+        `/api/v1/invitations/${invitation.id}/accept`,
+      );
+
+      expect(response.status).toBe(409);
+    });
+
+    it("rejects acceptance when the invitation has already been responded to", async () => {
+      const { agent: recipientAgent } =
+        await createVerifiedAgent("mayra@example.com");
+
+      const { user: sender } = await createVerifiedAgent();
+
+      const invitation = await createPendingInvitation(
+        sender.id,
+        "already-responded-accept-token",
+        "mayra@example.com",
+      );
+
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: {
+          status: "REJECTED",
+          respondedAt: new Date(),
+        },
+      });
+
+      const response = await recipientAgent.post(
+        `/api/v1/invitations/${invitation.id}/accept`,
+      );
+
+      expect(response.status).toBe(409);
+    });
+  });
+
+  describe("POST /api/v1/invitations/:id/reject", () => {
+  it("rejects a pending invitation for the authenticated recipient", async () => {
+    const { agent: recipientAgent, user: recipient } =
+      await createVerifiedAgent("mayra@example.com");
+
+    const { user: sender } = await createVerifiedAgent();
+
+    const invitation = await createPendingInvitation(
+      sender.id,
+      "reject-invitation-token",
+      "mayra@example.com",
+    );
+
+    const response = await recipientAgent.post(
+      `/api/v1/invitations/${invitation.id}/reject`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe("success");
+
+    const savedInvitation = await prisma.invitation.findUnique({
+      where: { id: invitation.id },
+    });
+
+    expect(savedInvitation?.status).toBe("REJECTED");
+    expect(savedInvitation?.recipientId).toBe(recipient.id);
+    expect(savedInvitation?.respondedAt).not.toBeNull();
+    expect(savedInvitation?.acceptedAt).toBeNull();
+  });
+
+  it("rejects unauthenticated requests", async () => {
+    const response = await request(app).post(
+      "/api/v1/invitations/00000000-0000-4000-8000-000000000000/reject",
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects users with unverified email addresses", async () => {
+    const agent = request.agent(app);
+
+    await agent.post("/api/v1/auth/register").send({
+      name: "Mayra",
+      email: "mayra@example.com",
+      password: "MyPassword123!",
+    });
+
+    const response = await agent.post(
+      "/api/v1/invitations/00000000-0000-4000-8000-000000000000/reject",
+    );
+
+    expect(response.status).toBe(403);
+  });
+
+  it("rejects invalid invitation IDs", async () => {
+    const { agent } = await createVerifiedAgent("mayra@example.com");
+
+    const response = await agent.post(
+      "/api/v1/invitations/invalid-id/reject",
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 404 when the invitation does not exist", async () => {
+    const { agent } = await createVerifiedAgent("mayra@example.com");
+
+    const response = await agent.post(
+      "/api/v1/invitations/00000000-0000-4000-8000-000000000000/reject",
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 410 when the invitation has expired", async () => {
+    const { agent: recipientAgent } =
+      await createVerifiedAgent("mayra@example.com");
+
+    const { user: sender } = await createVerifiedAgent();
+
+    const invitation = await createPendingInvitation(
+      sender.id,
+      "expired-reject-token",
+      "mayra@example.com",
+    );
+
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        expiresAt: new Date(Date.now() - 1000),
+      },
+    });
+
+    const response = await recipientAgent.post(
+      `/api/v1/invitations/${invitation.id}/reject`,
+    );
+
+    expect(response.status).toBe(410);
+
+    const savedInvitation = await prisma.invitation.findUnique({
+      where: { id: invitation.id },
+    });
+
+    expect(savedInvitation?.status).toBe("EXPIRED");
+  });
+
+  it("rejects the request when the invitation has already been responded to", async () => {
+    const { agent: recipientAgent } =
+      await createVerifiedAgent("mayra@example.com");
+
+    const { user: sender } = await createVerifiedAgent();
+
+    const invitation = await createPendingInvitation(
+      sender.id,
+      "already-responded-reject-token",
+      "mayra@example.com",
+    );
+
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        status: "ACCEPTED",
+        acceptedAt: new Date(),
+        respondedAt: new Date(),
+      },
+    });
+
+    const response = await recipientAgent.post(
+      `/api/v1/invitations/${invitation.id}/reject`,
+    );
+
+    expect(response.status).toBe(409);
+  });
+});
+});

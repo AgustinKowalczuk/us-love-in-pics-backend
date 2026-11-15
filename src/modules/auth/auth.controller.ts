@@ -1,3 +1,4 @@
+
 import type { RequestHandler } from "express";
 
 import {
@@ -10,37 +11,36 @@ export const registerController: RequestHandler = async (req, res, next) => {
   try {
     const user = await registerUser(req.body);
 
-    //Session regeneration to prevent session fixation.
-
+    // Regenerate the session to prevent session fixation.
     await new Promise<void>((resolve, reject) => {
       req.session.regenerate((error) => {
         if (error) {
           reject(error);
           return;
         }
+
         resolve();
       });
     });
 
-    //session assignment with user registration
     req.session.userId = user.id;
 
-    //session persistence before responding
+    // Persist the session before responding.
     await new Promise<void>((resolve, reject) => {
       req.session.save((error) => {
         if (error) {
           reject(error);
           return;
         }
+
         resolve();
       });
     });
+
     res.status(201).json({
       status: "success",
       message: "User registration successful",
-      data: {
-        user,
-      },
+      data: { user },
     });
   } catch (error) {
     if (
@@ -53,6 +53,7 @@ export const registerController: RequestHandler = async (req, res, next) => {
       });
       return;
     }
+
     next(error);
   }
 };
@@ -71,7 +72,11 @@ export const loginController: RequestHandler = async (req, res, next) => {
 
     await new Promise<void>((resolve, reject) => {
       req.session.regenerate((error) => {
-        if (error) return reject(error);
+        if (error) {
+          reject(error);
+          return;
+        }
+
         resolve();
       });
     });
@@ -80,7 +85,11 @@ export const loginController: RequestHandler = async (req, res, next) => {
 
     await new Promise<void>((resolve, reject) => {
       req.session.save((error) => {
-        if (error) return reject(error);
+        if (error) {
+          reject(error);
+          return;
+        }
+
         resolve();
       });
     });
@@ -110,27 +119,51 @@ export const meController: RequestHandler = async (req, res, next) => {
     const user = await getAuthenticatedUser(userId);
 
     if (!user) {
-      // Keep your existing invalid-session handling here.
+      req.session.destroy((error) => {
+        if (error) {
+          next(error);
+          return;
+        }
+
+        res.clearCookie("uslove.sid", {
+          path: "/",
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+        });
+
+        res.status(401).json({
+          status: "error",
+          message: "Invalid session",
+        });
+      });
+
+      return;
     }
 
     res.status(200).json({
       status: "success",
-      data: { user },
+      data: {
+        user: {
+          ...user,
+          emailVerified: Boolean(user.emailVerifiedAt),
+        },
+      },
     });
   } catch (error) {
     next(error);
   }
 };
 
-export const logoutController: RequestHandler = (req,res,next)=>{
-  req.session.destroy((error)=>{
-    if(error){
+export const logoutController: RequestHandler = (req, res, next) => {
+  req.session.destroy((error) => {
+    if (error) {
       next(error);
       return;
     }
 
-    res.clearCookie("uslove.sid",{
-      path:"/",
+    res.clearCookie("uslove.sid", {
+      path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -141,4 +174,4 @@ export const logoutController: RequestHandler = (req,res,next)=>{
       message: "User logged out successfully",
     });
   });
-}
+};
