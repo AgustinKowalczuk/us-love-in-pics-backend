@@ -17,8 +17,8 @@
 
 import * as runtime from "@prisma/client/runtime/index-browser"
 
-export type * from '../models.ts'
-export type * from './prismaNamespace.ts'
+export type * from '../models.js'
+export type * from './prismaNamespace.js'
 
 export const Decimal = runtime.Decimal
 
@@ -56,7 +56,8 @@ export const ModelName = {
   Board: 'Board',
   BoardMember: 'BoardMember',
   Memory: 'Memory',
-  MemoryMedia: 'MemoryMedia'
+  MemoryMedia: 'MemoryMedia',
+  EmailVerificationToken: 'EmailVerificationToken'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -80,6 +81,7 @@ export const UserScalarFieldEnum = {
   name: 'name',
   email: 'email',
   passwordHash: 'passwordHash',
+  emailVerifiedAt: 'emailVerifiedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -93,10 +95,13 @@ export const InvitationScalarFieldEnum = {
   recipientId: 'recipientId',
   recipientEmail: 'recipientEmail',
   tokenHash: 'tokenHash',
+  tokenEncrypted: 'tokenEncrypted',
   status: 'status',
   expiresAt: 'expiresAt',
   acceptedAt: 'acceptedAt',
-  createdAt: 'createdAt'
+  respondedAt: 'respondedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type InvitationScalarFieldEnum = (typeof InvitationScalarFieldEnum)[keyof typeof InvitationScalarFieldEnum]
@@ -150,6 +155,18 @@ export const MemoryMediaScalarFieldEnum = {
 } as const
 
 export type MemoryMediaScalarFieldEnum = (typeof MemoryMediaScalarFieldEnum)[keyof typeof MemoryMediaScalarFieldEnum]
+
+
+export const EmailVerificationTokenScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type EmailVerificationTokenScalarFieldEnum = (typeof EmailVerificationTokenScalarFieldEnum)[keyof typeof EmailVerificationTokenScalarFieldEnum]
 
 
 export const SortOrder = {

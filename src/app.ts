@@ -4,14 +4,21 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import { env } from "./config/env.js";
-import apiRouter from "./routes/index.js";
+import { sessionMiddleware } from "./config/session.js";
 import { errorHandler } from "./middlewares/error-handler.js";
+
+import apiRouter from "./routes/index.js";
 
 export const app = express();
 
 app.disable("x-powered-by");
 
+//middlewares
 app.use(helmet());
+
+if (env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
 
 app.use(
   cors({
@@ -20,11 +27,9 @@ app.use(
   }),
 );
 
-if (env.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-}
-
 app.use(express.json({ limit: "1mb" }));
+
+app.use(sessionMiddleware);
 
 //routes
 app.use("/api/v1", apiRouter);
