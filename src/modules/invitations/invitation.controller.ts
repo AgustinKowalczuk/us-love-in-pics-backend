@@ -5,7 +5,10 @@ import {
   resendInvitation,
   cancelInvitation,
   listSentInvitations,
-  listReceivedInvitations
+  listReceivedInvitations,
+  getInvitationByToken,
+  acceptInvitation,
+  rejectInvitation,
 } from "./invitation.service.js";
 
 const invitationErrors: Record<string, { status: number; message: string }> = {
@@ -49,6 +52,10 @@ const invitationErrors: Record<string, { status: number; message: string }> = {
     status: 502,
     message: "Unable to deliver the invitation email",
   },
+  RECIPIENT_ALREADY_HAS_ACTIVE_BOARD: {
+    status: 409,
+    message: "You already belong to an active board",
+  },
 };
 
 function getInvitationId(id: string | string[]): string {
@@ -59,6 +66,9 @@ function getInvitationId(id: string | string[]): string {
   return id;
 }
 
+/**
+ * Maps known invitation errors to HTTP responses and forwards unknown errors.
+ */
 function handleInvitationError(
   error: unknown,
   next: Parameters<RequestHandler>[2],
@@ -252,5 +262,109 @@ export const listReceivedInvitationsController: RequestHandler = async (
     }
 
     next(error);
+  }
+};
+
+/**
+ * Retrieves an invitation using its public token.
+ */
+export const getInvitationByTokenController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  const token = req.params.token;
+
+  if (typeof token !== "string") {
+    res.status(400).json({
+      status: "error",
+      message: "Invalid invitation token",
+    });
+    return;
+  }
+
+  try {
+    const result = await getInvitationByToken(token);
+
+    res.status(200).json({
+      status: "success",
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVITATION_NOT_FOUND") {
+      res.status(404).json({
+        status: "error",
+        message: "Invitation not found",
+      });
+      return;
+    }
+
+    next(error);
+  }
+};
+
+/**
+ * Accepts an invitation on behalf of the authenticated recipient.
+ */
+export const acceptInvitationController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const userId = req.session.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        status: "error",
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const result = await acceptInvitation(
+      userId,
+      getInvitationId(req.params.id),
+    );
+
+    res.status(200).json({
+      status: "success",
+      data: result,
+    });
+  } catch (error) {
+    handleInvitationError(error, next, res);
+  }
+};
+
+/**
+ * Rejects an invitation on behalf of the authenticated recipient.
+ */
+export const rejectInvitationController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const userId = req.session.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        status: "error",
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const result = await rejectInvitation(
+      userId,
+      getInvitationId(req.params.id),
+    );
+
+    res.status(200).json({
+      status: "success",
+      data: result,
+    });
+  } catch (error) {
+    handleInvitationError(error, next, res);
   }
 };

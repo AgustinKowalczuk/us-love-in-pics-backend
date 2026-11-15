@@ -15,7 +15,9 @@ import {
   resendInvitation,
   cancelInvitation,
   listSentInvitations,
-  listReceivedInvitations
+  listReceivedInvitations,
+  acceptInvitation,
+  rejectInvitation
 } from "../modules/invitations/invitation.service.js";
 import { encryptInvitationToken } from "../modules/invitations/invitation-crypto.js";
 
@@ -603,5 +605,316 @@ describe("listReceivedInvitations", () => {
     expect(invitation).not.toHaveProperty("recipientId");
     expect(invitation).not.toHaveProperty("tokenHash");
     expect(invitation).not.toHaveProperty("tokenEncrypted");
+  });
+});
+
+describe("acceptInvitation", () => {
+  it("accepts an invitation and associates it with the recipient", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      token: "accept-invitation-token",
+    });
+
+    const result = await acceptInvitation(recipient.id, invitation.id);
+
+    expect(result.message).toBe("Invitation accepted successfully");
+    expect(result.invitation.id).toBe(invitation.id);
+    expect(result.invitation.status).toBe("ACCEPTED");
+
+    const savedInvitation = await prisma.invitation.findUnique({
+      where: { id: invitation.id },
+    });
+
+    expect(savedInvitation?.status).toBe("ACCEPTED");
+    expect(savedInvitation?.recipientId).toBe(recipient.id);
+    expect(savedInvitation?.acceptedAt).not.toBeNull();
+    expect(savedInvitation?.respondedAt).not.toBeNull();
+  });
+
+  it("rejects other pending invitations received by the same user", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+    const anotherSender = await createVerifiedUser("other@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      token: "accepted-invitation-token",
+    });
+
+    const anotherInvitation = await createPendingInvitation(
+      anotherSender.id,
+      {
+        recipientEmail: recipient.email,
+        token: "rejected-invitation-token",
+      },
+    );
+
+    await acceptInvitation(recipient.id, invitation.id);
+
+    const savedOtherInvitation = await prisma.invitation.findUnique({
+      where: { id: anotherInvitation.id },
+    });
+
+    expect(savedOtherInvitation?.status).toBe("REJECTED");
+    expect(savedOtherInvitation?.recipientId).toBe(recipient.id);
+    expect(savedOtherInvitation?.respondedAt).not.toBeNull();
+  });
+
+  it("marks expired received invitations as expired when accepting another", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+    const anotherSender = await createVerifiedUser("other@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      token: "valid-invitation-token",
+    });
+
+    const expiredInvitation = await createPendingInvitation(
+      anotherSender.id,
+      {
+        recipientEmail: recipient.email,
+        expiresAt: new Date(Date.now() - 60 * 1000),
+        token: "expired-invitation-token",
+      },
+    );
+
+    await acceptInvitation(recipient.id, invitation.id);
+
+    const savedExpiredInvitation = await prisma.invitation.findUnique({
+      where: { id: expiredInvitation.id },
+    });
+
+    expect(savedExpiredInvitation?.status).toBe("EXPIRED");
+    expect(savedExpiredInvitation?.respondedAt).not.toBeNull();
+  });
+
+  it("rejects when the recipient does not exist", async () => {
+    await expect(
+      acceptInvitation(
+        "00000000-0000-4000-8000-000000000000",
+        "00000000-0000-4000-8000-000000000001",
+      ),
+    ).rejects.toThrow("USER_NOT_FOUND");
+  });
+
+  it("rejects when the recipient email is not verified", async () => {
+    const recipient = await prisma.user.create({
+      data: {
+        name: "Mayra",
+        email: "mayra@example.com",
+        passwordHash: "test-password-hash",
+      },
+    });
+
+    await expect(
+      acceptInvitation(recipient.id, "00000000-0000-4000-8000-000000000001"),
+    ).rejects.toThrow("EMAIL_NOT_VERIFIED");
+  });
+
+  it("rejects when the invitation belongs to another email address", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: "someone@example.com",
+      token: "another-email-invitation-token",
+    });
+
+    await expect(
+      acceptInvitation(recipient.id, invitation.id),
+    ).rejects.toThrow("INVITATION_NOT_FOUND");
+  });
+
+  it("rejects when the invitation has expired", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      expiresAt: new Date(Date.now() - 60 * 1000),
+      token: "expired-target-invitation-token",
+    });
+
+    await expect(
+      acceptInvitation(recipient.id, invitation.id),
+    ).rejects.toThrow("INVITATION_EXPIRED");
+
+    const savedInvitation = await prisma.invitation.findUnique({
+      where: { id: invitation.id },
+    });
+
+    expect(savedInvitation?.status).toBe("EXPIRED");
+    expect(savedInvitation?.respondedAt).not.toBeNull();
+  });
+
+  it("rejects when the sender already has an active board", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      token: "sender-active-board-token",
+    });
+
+    await createActiveBoard(sender.id);
+
+    await expect(
+      acceptInvitation(recipient.id, invitation.id),
+    ).rejects.toThrow("SENDER_ALREADY_HAS_ACTIVE_BOARD");
+  });
+
+  it("rejects when the recipient already has an active board", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      token: "recipient-active-board-token",
+    });
+
+    await createActiveBoard(recipient.id);
+
+    await expect(
+      acceptInvitation(recipient.id, invitation.id),
+    ).rejects.toThrow("RECIPIENT_ALREADY_HAS_ACTIVE_BOARD");
+  });
+
+  it("rejects when the invitation is no longer pending", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      token: "already-rejected-invitation-token",
+    });
+
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        status: "REJECTED",
+        respondedAt: new Date(),
+      },
+    });
+
+    await expect(
+      acceptInvitation(recipient.id, invitation.id),
+    ).rejects.toThrow("INVITATION_NOT_PENDING");
+  });
+});
+
+describe("rejectInvitation", () => {
+  it("rejects a pending invitation received by the user", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      token: "reject-invitation-token",
+    });
+
+    const result = await rejectInvitation(recipient.id, invitation.id);
+
+    expect(result.message).toBe("Invitation rejected successfully");
+    expect(result.invitation.id).toBe(invitation.id);
+    expect(result.invitation.status).toBe("REJECTED");
+
+    const savedInvitation = await prisma.invitation.findUnique({
+      where: { id: invitation.id },
+    });
+
+    expect(savedInvitation?.status).toBe("REJECTED");
+    expect(savedInvitation?.recipientId).toBe(recipient.id);
+    expect(savedInvitation?.respondedAt).not.toBeNull();
+  });
+
+  it("does not modify other received invitations", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+    const anotherSender = await createVerifiedUser("other@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      token: "first-rejected-invitation-token",
+    });
+
+    const anotherInvitation = await createPendingInvitation(
+      anotherSender.id,
+      {
+        recipientEmail: recipient.email,
+        token: "second-pending-invitation-token",
+      },
+    );
+
+    await rejectInvitation(recipient.id, invitation.id);
+
+    const savedOtherInvitation = await prisma.invitation.findUnique({
+      where: { id: anotherInvitation.id },
+    });
+
+    expect(savedOtherInvitation?.status).toBe("PENDING");
+    expect(savedOtherInvitation?.respondedAt).toBeNull();
+  });
+
+  it("rejects when the invitation belongs to another email address", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: "someone@example.com",
+      token: "wrong-recipient-rejection-token",
+    });
+
+    await expect(
+      rejectInvitation(recipient.id, invitation.id),
+    ).rejects.toThrow("INVITATION_NOT_FOUND");
+  });
+
+  it("marks an expired invitation as expired instead of rejecting it", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      expiresAt: new Date(Date.now() - 60 * 1000),
+      token: "expired-rejection-token",
+    });
+
+    await expect(
+      rejectInvitation(recipient.id, invitation.id),
+    ).rejects.toThrow("INVITATION_EXPIRED");
+
+    const savedInvitation = await prisma.invitation.findUnique({
+      where: { id: invitation.id },
+    });
+
+    expect(savedInvitation?.status).toBe("EXPIRED");
+    expect(savedInvitation?.respondedAt).not.toBeNull();
+  });
+
+  it("rejects when the invitation is no longer pending", async () => {
+    const recipient = await createVerifiedUser("mayra@example.com");
+    const sender = await createVerifiedUser("agustin@example.com");
+
+    const invitation = await createPendingInvitation(sender.id, {
+      recipientEmail: recipient.email,
+      token: "already-accepted-invitation-token",
+    });
+
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        status: "ACCEPTED",
+        acceptedAt: new Date(),
+        respondedAt: new Date(),
+      },
+    });
+
+    await expect(
+      rejectInvitation(recipient.id, invitation.id),
+    ).rejects.toThrow("INVITATION_NOT_PENDING");
   });
 });

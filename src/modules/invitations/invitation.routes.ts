@@ -6,6 +6,7 @@ import { validateRequest } from "../../middlewares/validate-request.js";
 import {
   createInvitationSchema,
   invitationParamsSchema,
+  invitationTokenParamsSchema,
 } from "../../schemas/invitation.schema.js";
 
 import {
@@ -13,7 +14,10 @@ import {
   resendInvitationController,
   cancelInvitationController,
   listSentInvitationsController,
-  listReceivedInvitationsController
+  listReceivedInvitationsController,
+  getInvitationByTokenController,
+  acceptInvitationController,
+  rejectInvitationController,
 } from "./invitation.controller.js";
 
 const router = Router();
@@ -43,18 +47,36 @@ router.delete(
 );
 
 // List sent invitations.
-router.get(
-  "/sent",
-  requireVerifiedEmail,
-  listSentInvitationsController,
-);
+router.get("/sent", requireVerifiedEmail, listSentInvitationsController);
 
-//List get
+// List received invitations.
 router.get(
   "/received",
   requireVerifiedEmail,
   listReceivedInvitationsController,
 );
 
+// Retrieve invitation by token.
+router.get(
+  "/token/:token",
+  validateRequest({ params: invitationTokenParamsSchema }),
+  getInvitationByTokenController,
+);
+
+// Accept invitation.
+router.post(
+  "/:id/accept",
+  requireVerifiedEmail,
+  validateRequest({ params: invitationParamsSchema }),
+  acceptInvitationController,
+);
+
+// Reject invitation.
+router.post(
+  "/:id/reject",
+  requireVerifiedEmail,
+  validateRequest({ params: invitationParamsSchema }),
+  rejectInvitationController,
+);
 
 export default router;

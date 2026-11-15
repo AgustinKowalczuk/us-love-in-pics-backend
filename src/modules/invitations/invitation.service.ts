@@ -1,4 +1,3 @@
-
 import { createHash, randomBytes } from "node:crypto";
 
 import { env } from "../../config/env.js";
@@ -6,9 +5,10 @@ import { mailer } from "../../config/mailer.js";
 import { prisma } from "../../config/prisma.js";
 import {
   encryptInvitationToken,
-  decryptInvitationToken
+  decryptInvitationToken,
 } from "./invitation-crypto.js";
 
+// Invitation timing configuration
 const INVITATION_EXPIRATION_HOURS = 72;
 const RESEND_COOLDOWN_MINUTES = 5;
 
@@ -93,8 +93,7 @@ export async function createInvitation(
   const tokenEncrypted = encryptInvitationToken(token);
 
   const expiresAt = new Date(
-    now.getTime() +
-      INVITATION_EXPIRATION_HOURS * 60 * 60 * 1000,
+    now.getTime() + INVITATION_EXPIRATION_HOURS * 60 * 60 * 1000,
   );
 
   let invitation;
@@ -154,8 +153,7 @@ export async function createInvitation(
     throw error;
   }
 
-  const invitationUrl =
-    `${env.FRONTEND_URL}/invitations/accept?token=${token}`;
+  const invitationUrl = `${env.FRONTEND_URL}/invitations/accept?token=${token}`;
 
   const safeSenderName = escapeHtml(sender.name);
 
@@ -209,11 +207,7 @@ export async function createInvitation(
   };
 }
 
-
-export async function resendInvitation(
-  senderId: string,
-  invitationId: string,
-) {
+export async function resendInvitation(senderId: string, invitationId: string) {
   const invitation = await prisma.invitation.findFirst({
     where: {
       id: invitationId,
@@ -287,9 +281,9 @@ export async function resendInvitation(
     throw new Error("RESEND_COOLDOWN_ACTIVE");
   }
 
-  const token = decryptInvitationToken(invitation.tokenEncrypted,);
+  const token = decryptInvitationToken(invitation.tokenEncrypted);
 
-  const invitationUrl =`${env.FRONTEND_URL}/invitations/accept?token=${token}`;
+  const invitationUrl = `${env.FRONTEND_URL}/invitations/accept?token=${token}`;
 
   const safeSenderName = escapeHtml(invitation.sender.name);
 
@@ -326,17 +320,11 @@ export async function resendInvitation(
       recipientEmail: invitation.recipientEmail,
       expiresAt: invitation.expiresAt,
     },
-    nextResendAt: new Date(
-      now.getTime() + cooldownMilliseconds,
-    ),
+    nextResendAt: new Date(now.getTime() + cooldownMilliseconds),
   };
 }
 
-
-export async function cancelInvitation(
-  senderId: string,
-  invitationId: string,
-) {
+export async function cancelInvitation(senderId: string, invitationId: string) {
   const now = new Date();
 
   const invitation = await prisma.invitation.findFirst({
@@ -492,4 +480,389 @@ export async function listReceivedInvitations(userId: string) {
   });
 
   return { invitations };
+}
+
+/**
+ * Retrieves an invitation using its public token.
+ */
+export async function getInvitationByToken(token: string) {
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+
+  const invitation = await prisma.invitation.findUnique({
+    where: { tokenHash },
+    select: {
+      id: true,
+      status: true,
+      expiresAt: true,
+      sender: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!invitation) {
+    throw new Error("INVITATION_NOT_FOUND");
+  }
+
+  const now = new Date();
+
+  if (invitation.status === "PENDING" && invitation.expiresAt <= now) {
+    await prisma.invitation.updateMany({
+      where: {
+        id: invitation.id,
+        status: "PENDING",
+        expiresAt: { lte: now },
+      },
+      data: {
+        status: "EXPIRED",
+        respondedAt: now,
+      },
+    });
+
+    const updatedInvitation = await prisma.invitation.findUnique({
+      where: { id: invitation.id },
+      select: {
+        id: true,
+        status: true,
+        expiresAt: true,
+        sender: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!updatedInvitation) {
+      throw new Error("INVITATION_NOT_FOUND");
+    }
+
+    return { invitation: updatedInvitation };
+  }
+
+  return { invitation };
+}
+
+/**
+ * Accepts an invitation and rejects all other pending invitations received by the user.
+ */
+export async function acceptInvitation(userId: string, invitationId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      emailVerifiedAt: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  if (!user.emailVerifiedAt) {
+    throw new Error("EMAIL_NOT_VERIFIED");
+  }
+
+  const normalizedEmail = user.email.trim().toLowerCase();
+
+  const candidateInvitation = await prisma.invitation.findFirst({
+    where: {
+      id: invitationId,
+      recipientEmail: normalizedEmail,
+      OR: [{ recipientId: null }, { recipientId: userId }],
+    },
+    select: {
+      senderId: true,
+    },
+  });
+
+  if (!candidateInvitation) {
+    throw new Error("INVITATION_NOT_FOUND");
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    // Lock both users in a stable order to prevent concurrent invitation decisions.
+    const userIds = [userId, candidateInvitation.senderId].sort();
+
+    for (const lockedUserId of userIds) {
+      await tx.$queryRaw`
+        SELECT id
+        FROM users
+        WHERE id = ${lockedUserId}::uuid
+        FOR UPDATE
+      `;
+    }
+
+    const now = new Date();
+
+    const invitation = await tx.invitation.findFirst({
+      where: {
+        id: invitationId,
+        recipientEmail: normalizedEmail,
+        OR: [{ recipientId: null }, { recipientId: userId }],
+      },
+      select: {
+        id: true,
+        senderId: true,
+        status: true,
+        expiresAt: true,
+      },
+    });
+
+    if (!invitation) {
+      throw new Error("INVITATION_NOT_FOUND");
+    }
+
+    if (invitation.status !== "PENDING") {
+      throw new Error("INVITATION_NOT_PENDING");
+    }
+
+    if (invitation.expiresAt <= now) {
+      await tx.invitation.updateMany({
+        where: {
+          id: invitation.id,
+          status: "PENDING",
+          expiresAt: { lte: now },
+        },
+        data: {
+          status: "EXPIRED",
+          respondedAt: now,
+        },
+      });
+
+      return { error: "INVITATION_EXPIRED" as const };
+    }
+
+    const senderActiveBoard = await tx.boardMember.findFirst({
+      where: {
+        userId: invitation.senderId,
+        status: "ACTIVE",
+        board: {
+          status: "ACTIVE",
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (senderActiveBoard) {
+      throw new Error("SENDER_ALREADY_HAS_ACTIVE_BOARD");
+    }
+
+    const recipientActiveBoard = await tx.boardMember.findFirst({
+      where: {
+        userId,
+        status: "ACTIVE",
+        board: {
+          status: "ACTIVE",
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (recipientActiveBoard) {
+      throw new Error("RECIPIENT_ALREADY_HAS_ACTIVE_BOARD");
+    }
+
+    const accepted = await tx.invitation.updateMany({
+      where: {
+        id: invitation.id,
+        recipientEmail: normalizedEmail,
+        status: "PENDING",
+        expiresAt: { gt: now },
+        OR: [{ recipientId: null }, { recipientId: userId }],
+      },
+      data: {
+        recipientId: userId,
+        status: "ACCEPTED",
+        acceptedAt: now,
+        respondedAt: now,
+      },
+    });
+
+    if (accepted.count !== 1) {
+      throw new Error("INVITATION_NOT_PENDING");
+    }
+
+    // Expire other invitations whose expiration date has passed.
+    await tx.invitation.updateMany({
+      where: {
+        recipientEmail: normalizedEmail,
+        id: { not: invitation.id },
+        status: "PENDING",
+        expiresAt: { lte: now },
+      },
+      data: {
+        status: "EXPIRED",
+        respondedAt: now,
+      },
+    });
+
+    // Reject all other valid pending invitations received by this user.
+    await tx.invitation.updateMany({
+      where: {
+        recipientEmail: normalizedEmail,
+        id: { not: invitation.id },
+        status: "PENDING",
+        expiresAt: { gt: now },
+      },
+      data: {
+        recipientId: userId,
+        status: "REJECTED",
+        respondedAt: now,
+      },
+    });
+
+    return {
+      invitation: {
+        id: invitation.id,
+        status: "ACCEPTED" as const,
+        acceptedAt: now,
+        respondedAt: now,
+      },
+    };
+  });
+  
+  const now = new Date();
+
+  if ("error" in result) {
+    throw new Error(result.error);
+  }
+
+  return {
+    message: "Invitation accepted successfully",
+    invitation: result.invitation,
+  };
+}
+
+/**
+ * Rejects a pending invitation received by the authenticated user.
+ */
+export async function rejectInvitation(userId: string, invitationId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      emailVerifiedAt: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  if (!user.emailVerifiedAt) {
+    throw new Error("EMAIL_NOT_VERIFIED");
+  }
+
+  const normalizedEmail = user.email.trim().toLowerCase();
+
+  const candidateInvitation = await prisma.invitation.findFirst({
+    where: {
+      id: invitationId,
+      recipientEmail: normalizedEmail,
+      OR: [{ recipientId: null }, { recipientId: userId }],
+    },
+    select: {
+      senderId: true,
+    },
+  });
+
+  if (!candidateInvitation) {
+    throw new Error("INVITATION_NOT_FOUND");
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    // Lock both users in a stable order to prevent concurrent invitation decisions.
+    const userIds = [userId, candidateInvitation.senderId].sort();
+
+    for (const lockedUserId of userIds) {
+      await tx.$queryRaw`
+      SELECT id
+      FROM users
+      WHERE id = ${lockedUserId}::uuid
+      FOR UPDATE
+      `;
+    }
+
+    const now = new Date();
+
+    const invitation = await tx.invitation.findFirst({
+      where: {
+        id: invitationId,
+        recipientEmail: normalizedEmail,
+        OR: [{ recipientId: null }, { recipientId: userId }],
+      },
+      select: {
+        id: true,
+        status: true,
+        expiresAt: true,
+      },
+    });
+
+    if (!invitation) {
+      throw new Error("INVITATION_NOT_FOUND");
+    }
+
+    if (invitation.status !== "PENDING") {
+      throw new Error("INVITATION_NOT_PENDING");
+    }
+
+    if (invitation.expiresAt <= now) {
+      await tx.invitation.updateMany({
+        where: {
+          id: invitation.id,
+          status: "PENDING",
+          expiresAt: { lte: now },
+        },
+        data: {
+          status: "EXPIRED",
+          respondedAt: now,
+        },
+      });
+
+      return { error: "INVITATION_EXPIRED" as const };
+    }
+
+    const rejected = await tx.invitation.updateMany({
+      where: {
+        id: invitation.id,
+        recipientEmail: normalizedEmail,
+        status: "PENDING",
+        expiresAt: { gt: now },
+        OR: [{ recipientId: null }, { recipientId: userId }],
+      },
+      data: {
+        recipientId: userId,
+        status: "REJECTED",
+        respondedAt: now,
+      },
+    });
+
+    if (rejected.count !== 1) {
+      throw new Error("INVITATION_NOT_PENDING");
+    }
+
+    return {
+      invitation: {
+        id: invitation.id,
+        status: "REJECTED" as const,
+        respondedAt: now,
+      },
+    };
+  });
+
+  if ("error" in result) {
+    throw new Error(result.error);
+  }
+
+  return {
+    message: "Invitation rejected successfully",
+    invitation: result.invitation,
+  };
 }

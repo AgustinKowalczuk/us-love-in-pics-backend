@@ -11,3 +11,7 @@ export const createInvitationSchema = z.object({
 export const invitationParamsSchema = z.object({
   id: z.string().uuid("Invalid invitation ID"),
 });
+
+export const invitationTokenParamsSchema = z.object({
+  token: z.string().regex(/^[a-f0-9]{64}$/i, "Invalid invitation token"),
+});
