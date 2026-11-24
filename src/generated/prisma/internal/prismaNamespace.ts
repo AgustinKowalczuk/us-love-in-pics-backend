@@ -403,7 +403,8 @@ export const ModelName = {
   BoardMember: 'BoardMember',
   Memory: 'Memory',
   MemoryMedia: 'MemoryMedia',
-  EmailVerificationToken: 'EmailVerificationToken'
+  EmailVerificationToken: 'EmailVerificationToken',
+  UserSession: 'UserSession'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -419,7 +420,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "invitation" | "board" | "boardMember" | "memory" | "memoryMedia" | "emailVerificationToken"
+    modelProps: "user" | "invitation" | "board" | "boardMember" | "memory" | "memoryMedia" | "emailVerificationToken" | "userSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -941,6 +942,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserSession: {
+      payload: Prisma.$UserSessionPayload<ExtArgs>
+      fields: Prisma.UserSessionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserSessionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserSessionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
+        }
+        findFirst: {
+          args: Prisma.UserSessionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserSessionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
+        }
+        findMany: {
+          args: Prisma.UserSessionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>[]
+        }
+        create: {
+          args: Prisma.UserSessionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
+        }
+        createMany: {
+          args: Prisma.UserSessionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserSessionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>[]
+        }
+        delete: {
+          args: Prisma.UserSessionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
+        }
+        update: {
+          args: Prisma.UserSessionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserSessionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserSessionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserSessionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserSessionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSessionPayload>
+        }
+        aggregate: {
+          args: Prisma.UserSessionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserSession>
+        }
+        groupBy: {
+          args: Prisma.UserSessionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserSessionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserSessionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserSessionCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1016,8 +1091,10 @@ export const BoardScalarFieldEnum = {
   name: 'name',
   status: 'status',
   photoLimit: 'photoLimit',
+  invitationId: 'invitationId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  archivedAt: 'archivedAt'
 } as const
 
 export type BoardScalarFieldEnum = (typeof BoardScalarFieldEnum)[keyof typeof BoardScalarFieldEnum]
@@ -1073,12 +1150,28 @@ export const EmailVerificationTokenScalarFieldEnum = {
 export type EmailVerificationTokenScalarFieldEnum = (typeof EmailVerificationTokenScalarFieldEnum)[keyof typeof EmailVerificationTokenScalarFieldEnum]
 
 
+export const UserSessionScalarFieldEnum = {
+  sid: 'sid',
+  sess: 'sess',
+  expire: 'expire'
+} as const
+
+export type UserSessionScalarFieldEnum = (typeof UserSessionScalarFieldEnum)[keyof typeof UserSessionScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -1095,6 +1188,15 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
 
@@ -1226,6 +1328,20 @@ export type EnumMediaTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
  * Reference to a field of type 'MediaType[]'
  */
 export type ListEnumMediaTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MediaType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -1400,6 +1516,7 @@ export type GlobalOmitConfig = {
   memory?: Prisma.MemoryOmit
   memoryMedia?: Prisma.MemoryMediaOmit
   emailVerificationToken?: Prisma.EmailVerificationTokenOmit
+  userSession?: Prisma.UserSessionOmit
 }
 
 /* Types for Logging */

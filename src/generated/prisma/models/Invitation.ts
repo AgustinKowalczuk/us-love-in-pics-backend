@@ -240,6 +240,7 @@ export type InvitationWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Invitation"> | Date | string
   sender?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   recipient?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  board?: Prisma.XOR<Prisma.BoardNullableScalarRelationFilter, Prisma.BoardWhereInput> | null
 }
 
 export type InvitationOrderByWithRelationInput = {
@@ -257,6 +258,7 @@ export type InvitationOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   sender?: Prisma.UserOrderByWithRelationInput
   recipient?: Prisma.UserOrderByWithRelationInput
+  board?: Prisma.BoardOrderByWithRelationInput
 }
 
 export type InvitationWhereUniqueInput = Prisma.AtLeast<{
@@ -277,6 +279,7 @@ export type InvitationWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Invitation"> | Date | string
   sender?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   recipient?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  board?: Prisma.XOR<Prisma.BoardNullableScalarRelationFilter, Prisma.BoardWhereInput> | null
 }, "id" | "tokenHash">
 
 export type InvitationOrderByWithAggregationInput = {
@@ -328,6 +331,7 @@ export type InvitationCreateInput = {
   updatedAt?: Date | string
   sender: Prisma.UserCreateNestedOneWithoutSentInvitationsInput
   recipient?: Prisma.UserCreateNestedOneWithoutReceivedInvitationsInput
+  board?: Prisma.BoardCreateNestedOneWithoutInvitationInput
 }
 
 export type InvitationUncheckedCreateInput = {
@@ -343,6 +347,7 @@ export type InvitationUncheckedCreateInput = {
   respondedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  board?: Prisma.BoardUncheckedCreateNestedOneWithoutInvitationInput
 }
 
 export type InvitationUpdateInput = {
@@ -358,6 +363,7 @@ export type InvitationUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sender?: Prisma.UserUpdateOneRequiredWithoutSentInvitationsNestedInput
   recipient?: Prisma.UserUpdateOneWithoutReceivedInvitationsNestedInput
+  board?: Prisma.BoardUpdateOneWithoutInvitationNestedInput
 }
 
 export type InvitationUncheckedUpdateInput = {
@@ -373,6 +379,7 @@ export type InvitationUncheckedUpdateInput = {
   respondedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  board?: Prisma.BoardUncheckedUpdateOneWithoutInvitationNestedInput
 }
 
 export type InvitationCreateManyInput = {
@@ -473,6 +480,11 @@ export type InvitationMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type InvitationNullableScalarRelationFilter = {
+  is?: Prisma.InvitationWhereInput | null
+  isNot?: Prisma.InvitationWhereInput | null
+}
+
 export type InvitationCreateNestedManyWithoutSenderInput = {
   create?: Prisma.XOR<Prisma.InvitationCreateWithoutSenderInput, Prisma.InvitationUncheckedCreateWithoutSenderInput> | Prisma.InvitationCreateWithoutSenderInput[] | Prisma.InvitationUncheckedCreateWithoutSenderInput[]
   connectOrCreate?: Prisma.InvitationCreateOrConnectWithoutSenderInput | Prisma.InvitationCreateOrConnectWithoutSenderInput[]
@@ -565,6 +577,22 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
+export type InvitationCreateNestedOneWithoutBoardInput = {
+  create?: Prisma.XOR<Prisma.InvitationCreateWithoutBoardInput, Prisma.InvitationUncheckedCreateWithoutBoardInput>
+  connectOrCreate?: Prisma.InvitationCreateOrConnectWithoutBoardInput
+  connect?: Prisma.InvitationWhereUniqueInput
+}
+
+export type InvitationUpdateOneWithoutBoardNestedInput = {
+  create?: Prisma.XOR<Prisma.InvitationCreateWithoutBoardInput, Prisma.InvitationUncheckedCreateWithoutBoardInput>
+  connectOrCreate?: Prisma.InvitationCreateOrConnectWithoutBoardInput
+  upsert?: Prisma.InvitationUpsertWithoutBoardInput
+  disconnect?: Prisma.InvitationWhereInput | boolean
+  delete?: Prisma.InvitationWhereInput | boolean
+  connect?: Prisma.InvitationWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.InvitationUpdateToOneWithWhereWithoutBoardInput, Prisma.InvitationUpdateWithoutBoardInput>, Prisma.InvitationUncheckedUpdateWithoutBoardInput>
+}
+
 export type InvitationCreateWithoutSenderInput = {
   id?: string
   recipientEmail: string
@@ -577,6 +605,7 @@ export type InvitationCreateWithoutSenderInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   recipient?: Prisma.UserCreateNestedOneWithoutReceivedInvitationsInput
+  board?: Prisma.BoardCreateNestedOneWithoutInvitationInput
 }
 
 export type InvitationUncheckedCreateWithoutSenderInput = {
@@ -591,6 +620,7 @@ export type InvitationUncheckedCreateWithoutSenderInput = {
   respondedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  board?: Prisma.BoardUncheckedCreateNestedOneWithoutInvitationInput
 }
 
 export type InvitationCreateOrConnectWithoutSenderInput = {
@@ -615,6 +645,7 @@ export type InvitationCreateWithoutRecipientInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   sender: Prisma.UserCreateNestedOneWithoutSentInvitationsInput
+  board?: Prisma.BoardCreateNestedOneWithoutInvitationInput
 }
 
 export type InvitationUncheckedCreateWithoutRecipientInput = {
@@ -629,6 +660,7 @@ export type InvitationUncheckedCreateWithoutRecipientInput = {
   respondedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  board?: Prisma.BoardUncheckedCreateNestedOneWithoutInvitationInput
 }
 
 export type InvitationCreateOrConnectWithoutRecipientInput = {
@@ -691,6 +723,82 @@ export type InvitationUpdateManyWithWhereWithoutRecipientInput = {
   data: Prisma.XOR<Prisma.InvitationUpdateManyMutationInput, Prisma.InvitationUncheckedUpdateManyWithoutRecipientInput>
 }
 
+export type InvitationCreateWithoutBoardInput = {
+  id?: string
+  recipientEmail: string
+  tokenHash: string
+  tokenEncrypted: string
+  status?: $Enums.InvitationStatus
+  expiresAt: Date | string
+  acceptedAt?: Date | string | null
+  respondedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sender: Prisma.UserCreateNestedOneWithoutSentInvitationsInput
+  recipient?: Prisma.UserCreateNestedOneWithoutReceivedInvitationsInput
+}
+
+export type InvitationUncheckedCreateWithoutBoardInput = {
+  id?: string
+  senderId: string
+  recipientId?: string | null
+  recipientEmail: string
+  tokenHash: string
+  tokenEncrypted: string
+  status?: $Enums.InvitationStatus
+  expiresAt: Date | string
+  acceptedAt?: Date | string | null
+  respondedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type InvitationCreateOrConnectWithoutBoardInput = {
+  where: Prisma.InvitationWhereUniqueInput
+  create: Prisma.XOR<Prisma.InvitationCreateWithoutBoardInput, Prisma.InvitationUncheckedCreateWithoutBoardInput>
+}
+
+export type InvitationUpsertWithoutBoardInput = {
+  update: Prisma.XOR<Prisma.InvitationUpdateWithoutBoardInput, Prisma.InvitationUncheckedUpdateWithoutBoardInput>
+  create: Prisma.XOR<Prisma.InvitationCreateWithoutBoardInput, Prisma.InvitationUncheckedCreateWithoutBoardInput>
+  where?: Prisma.InvitationWhereInput
+}
+
+export type InvitationUpdateToOneWithWhereWithoutBoardInput = {
+  where?: Prisma.InvitationWhereInput
+  data: Prisma.XOR<Prisma.InvitationUpdateWithoutBoardInput, Prisma.InvitationUncheckedUpdateWithoutBoardInput>
+}
+
+export type InvitationUpdateWithoutBoardInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  recipientEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  tokenHash?: Prisma.StringFieldUpdateOperationsInput | string
+  tokenEncrypted?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumInvitationStatusFieldUpdateOperationsInput | $Enums.InvitationStatus
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  acceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  respondedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sender?: Prisma.UserUpdateOneRequiredWithoutSentInvitationsNestedInput
+  recipient?: Prisma.UserUpdateOneWithoutReceivedInvitationsNestedInput
+}
+
+export type InvitationUncheckedUpdateWithoutBoardInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  senderId?: Prisma.StringFieldUpdateOperationsInput | string
+  recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  tokenHash?: Prisma.StringFieldUpdateOperationsInput | string
+  tokenEncrypted?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumInvitationStatusFieldUpdateOperationsInput | $Enums.InvitationStatus
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  acceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  respondedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type InvitationCreateManySenderInput = {
   id?: string
   recipientId?: string | null
@@ -731,6 +839,7 @@ export type InvitationUpdateWithoutSenderInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   recipient?: Prisma.UserUpdateOneWithoutReceivedInvitationsNestedInput
+  board?: Prisma.BoardUpdateOneWithoutInvitationNestedInput
 }
 
 export type InvitationUncheckedUpdateWithoutSenderInput = {
@@ -745,6 +854,7 @@ export type InvitationUncheckedUpdateWithoutSenderInput = {
   respondedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  board?: Prisma.BoardUncheckedUpdateOneWithoutInvitationNestedInput
 }
 
 export type InvitationUncheckedUpdateManyWithoutSenderInput = {
@@ -773,6 +883,7 @@ export type InvitationUpdateWithoutRecipientInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sender?: Prisma.UserUpdateOneRequiredWithoutSentInvitationsNestedInput
+  board?: Prisma.BoardUpdateOneWithoutInvitationNestedInput
 }
 
 export type InvitationUncheckedUpdateWithoutRecipientInput = {
@@ -787,6 +898,7 @@ export type InvitationUncheckedUpdateWithoutRecipientInput = {
   respondedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  board?: Prisma.BoardUncheckedUpdateOneWithoutInvitationNestedInput
 }
 
 export type InvitationUncheckedUpdateManyWithoutRecipientInput = {
@@ -820,6 +932,7 @@ export type InvitationSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   updatedAt?: boolean
   sender?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   recipient?: boolean | Prisma.Invitation$recipientArgs<ExtArgs>
+  board?: boolean | Prisma.Invitation$boardArgs<ExtArgs>
 }, ExtArgs["result"]["invitation"]>
 
 export type InvitationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -875,6 +988,7 @@ export type InvitationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs
 export type InvitationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sender?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   recipient?: boolean | Prisma.Invitation$recipientArgs<ExtArgs>
+  board?: boolean | Prisma.Invitation$boardArgs<ExtArgs>
 }
 export type InvitationIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sender?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -890,6 +1004,7 @@ export type $InvitationPayload<ExtArgs extends runtime.Types.Extensions.Internal
   objects: {
     sender: Prisma.$UserPayload<ExtArgs>
     recipient: Prisma.$UserPayload<ExtArgs> | null
+    board: Prisma.$BoardPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1300,6 +1415,7 @@ export interface Prisma__InvitationClient<T, Null = never, ExtArgs extends runti
   readonly [Symbol.toStringTag]: "PrismaPromise"
   sender<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   recipient<T extends Prisma.Invitation$recipientArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Invitation$recipientArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  board<T extends Prisma.Invitation$boardArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Invitation$boardArgs<ExtArgs>>): Prisma.Prisma__BoardClient<runtime.Types.Result.GetResult<Prisma.$BoardPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1758,6 +1874,25 @@ export type Invitation$recipientArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   include?: Prisma.UserInclude<ExtArgs> | null
   where?: Prisma.UserWhereInput
+}
+
+/**
+ * Invitation.board
+ */
+export type Invitation$boardArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Board
+   */
+  select?: Prisma.BoardSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Board
+   */
+  omit?: Prisma.BoardOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BoardInclude<ExtArgs> | null
+  where?: Prisma.BoardWhereInput
 }
 
 /**

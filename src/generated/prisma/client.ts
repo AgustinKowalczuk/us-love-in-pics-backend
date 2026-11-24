@@ -76,3 +76,8 @@ export type MemoryMedia = Prisma.MemoryMediaModel
  * 
  */
 export type EmailVerificationToken = Prisma.EmailVerificationTokenModel
+/**
+ * Model UserSession
+ * 
+ */
+export type UserSession = Prisma.UserSessionModel

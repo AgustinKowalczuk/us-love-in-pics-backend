@@ -39,8 +39,10 @@ export type BoardMinAggregateOutputType = {
   name: string | null
   status: $Enums.BoardStatus | null
   photoLimit: number | null
+  invitationId: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  archivedAt: Date | null
 }
 
 export type BoardMaxAggregateOutputType = {
@@ -48,8 +50,10 @@ export type BoardMaxAggregateOutputType = {
   name: string | null
   status: $Enums.BoardStatus | null
   photoLimit: number | null
+  invitationId: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  archivedAt: Date | null
 }
 
 export type BoardCountAggregateOutputType = {
@@ -57,8 +61,10 @@ export type BoardCountAggregateOutputType = {
   name: number
   status: number
   photoLimit: number
+  invitationId: number
   createdAt: number
   updatedAt: number
+  archivedAt: number
   _all: number
 }
 
@@ -76,8 +82,10 @@ export type BoardMinAggregateInputType = {
   name?: true
   status?: true
   photoLimit?: true
+  invitationId?: true
   createdAt?: true
   updatedAt?: true
+  archivedAt?: true
 }
 
 export type BoardMaxAggregateInputType = {
@@ -85,8 +93,10 @@ export type BoardMaxAggregateInputType = {
   name?: true
   status?: true
   photoLimit?: true
+  invitationId?: true
   createdAt?: true
   updatedAt?: true
+  archivedAt?: true
 }
 
 export type BoardCountAggregateInputType = {
@@ -94,8 +104,10 @@ export type BoardCountAggregateInputType = {
   name?: true
   status?: true
   photoLimit?: true
+  invitationId?: true
   createdAt?: true
   updatedAt?: true
+  archivedAt?: true
   _all?: true
 }
 
@@ -190,8 +202,10 @@ export type BoardGroupByOutputType = {
   name: string
   status: $Enums.BoardStatus
   photoLimit: number
+  invitationId: string | null
   createdAt: Date
   updatedAt: Date
+  archivedAt: Date | null
   _count: BoardCountAggregateOutputType | null
   _avg: BoardAvgAggregateOutputType | null
   _sum: BoardSumAggregateOutputType | null
@@ -222,8 +236,11 @@ export type BoardWhereInput = {
   name?: Prisma.StringFilter<"Board"> | string
   status?: Prisma.EnumBoardStatusFilter<"Board"> | $Enums.BoardStatus
   photoLimit?: Prisma.IntFilter<"Board"> | number
+  invitationId?: Prisma.UuidNullableFilter<"Board"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Board"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Board"> | Date | string
+  archivedAt?: Prisma.DateTimeNullableFilter<"Board"> | Date | string | null
+  invitation?: Prisma.XOR<Prisma.InvitationNullableScalarRelationFilter, Prisma.InvitationWhereInput> | null
   members?: Prisma.BoardMemberListRelationFilter
   memories?: Prisma.MemoryListRelationFilter
 }
@@ -233,14 +250,18 @@ export type BoardOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   status?: Prisma.SortOrder
   photoLimit?: Prisma.SortOrder
+  invitationId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  invitation?: Prisma.InvitationOrderByWithRelationInput
   members?: Prisma.BoardMemberOrderByRelationAggregateInput
   memories?: Prisma.MemoryOrderByRelationAggregateInput
 }
 
 export type BoardWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  invitationId?: string
   AND?: Prisma.BoardWhereInput | Prisma.BoardWhereInput[]
   OR?: Prisma.BoardWhereInput[]
   NOT?: Prisma.BoardWhereInput | Prisma.BoardWhereInput[]
@@ -249,17 +270,21 @@ export type BoardWhereUniqueInput = Prisma.AtLeast<{
   photoLimit?: Prisma.IntFilter<"Board"> | number
   createdAt?: Prisma.DateTimeFilter<"Board"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Board"> | Date | string
+  archivedAt?: Prisma.DateTimeNullableFilter<"Board"> | Date | string | null
+  invitation?: Prisma.XOR<Prisma.InvitationNullableScalarRelationFilter, Prisma.InvitationWhereInput> | null
   members?: Prisma.BoardMemberListRelationFilter
   memories?: Prisma.MemoryListRelationFilter
-}, "id">
+}, "id" | "invitationId">
 
 export type BoardOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   status?: Prisma.SortOrder
   photoLimit?: Prisma.SortOrder
+  invitationId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.BoardCountOrderByAggregateInput
   _avg?: Prisma.BoardAvgOrderByAggregateInput
   _max?: Prisma.BoardMaxOrderByAggregateInput
@@ -275,8 +300,10 @@ export type BoardScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Board"> | string
   status?: Prisma.EnumBoardStatusWithAggregatesFilter<"Board"> | $Enums.BoardStatus
   photoLimit?: Prisma.IntWithAggregatesFilter<"Board"> | number
+  invitationId?: Prisma.UuidNullableWithAggregatesFilter<"Board"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Board"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Board"> | Date | string
+  archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Board"> | Date | string | null
 }
 
 export type BoardCreateInput = {
@@ -286,6 +313,8 @@ export type BoardCreateInput = {
   photoLimit?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  archivedAt?: Date | string | null
+  invitation?: Prisma.InvitationCreateNestedOneWithoutBoardInput
   members?: Prisma.BoardMemberCreateNestedManyWithoutBoardInput
   memories?: Prisma.MemoryCreateNestedManyWithoutBoardInput
 }
@@ -295,8 +324,10 @@ export type BoardUncheckedCreateInput = {
   name: string
   status?: $Enums.BoardStatus
   photoLimit?: number
+  invitationId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  archivedAt?: Date | string | null
   members?: Prisma.BoardMemberUncheckedCreateNestedManyWithoutBoardInput
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutBoardInput
 }
@@ -308,6 +339,8 @@ export type BoardUpdateInput = {
   photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invitation?: Prisma.InvitationUpdateOneWithoutBoardNestedInput
   members?: Prisma.BoardMemberUpdateManyWithoutBoardNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutBoardNestedInput
 }
@@ -317,8 +350,10 @@ export type BoardUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumBoardStatusFieldUpdateOperationsInput | $Enums.BoardStatus
   photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  invitationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   members?: Prisma.BoardMemberUncheckedUpdateManyWithoutBoardNestedInput
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutBoardNestedInput
 }
@@ -328,8 +363,10 @@ export type BoardCreateManyInput = {
   name: string
   status?: $Enums.BoardStatus
   photoLimit?: number
+  invitationId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  archivedAt?: Date | string | null
 }
 
 export type BoardUpdateManyMutationInput = {
@@ -339,6 +376,7 @@ export type BoardUpdateManyMutationInput = {
   photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type BoardUncheckedUpdateManyInput = {
@@ -346,8 +384,15 @@ export type BoardUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumBoardStatusFieldUpdateOperationsInput | $Enums.BoardStatus
   photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  invitationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
+export type BoardNullableScalarRelationFilter = {
+  is?: Prisma.BoardWhereInput | null
+  isNot?: Prisma.BoardWhereInput | null
 }
 
 export type BoardCountOrderByAggregateInput = {
@@ -355,8 +400,10 @@ export type BoardCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   status?: Prisma.SortOrder
   photoLimit?: Prisma.SortOrder
+  invitationId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
 }
 
 export type BoardAvgOrderByAggregateInput = {
@@ -368,8 +415,10 @@ export type BoardMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   status?: Prisma.SortOrder
   photoLimit?: Prisma.SortOrder
+  invitationId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
 }
 
 export type BoardMinOrderByAggregateInput = {
@@ -377,8 +426,10 @@ export type BoardMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   status?: Prisma.SortOrder
   photoLimit?: Prisma.SortOrder
+  invitationId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
 }
 
 export type BoardSumOrderByAggregateInput = {
@@ -388,6 +439,38 @@ export type BoardSumOrderByAggregateInput = {
 export type BoardScalarRelationFilter = {
   is?: Prisma.BoardWhereInput
   isNot?: Prisma.BoardWhereInput
+}
+
+export type BoardCreateNestedOneWithoutInvitationInput = {
+  create?: Prisma.XOR<Prisma.BoardCreateWithoutInvitationInput, Prisma.BoardUncheckedCreateWithoutInvitationInput>
+  connectOrCreate?: Prisma.BoardCreateOrConnectWithoutInvitationInput
+  connect?: Prisma.BoardWhereUniqueInput
+}
+
+export type BoardUncheckedCreateNestedOneWithoutInvitationInput = {
+  create?: Prisma.XOR<Prisma.BoardCreateWithoutInvitationInput, Prisma.BoardUncheckedCreateWithoutInvitationInput>
+  connectOrCreate?: Prisma.BoardCreateOrConnectWithoutInvitationInput
+  connect?: Prisma.BoardWhereUniqueInput
+}
+
+export type BoardUpdateOneWithoutInvitationNestedInput = {
+  create?: Prisma.XOR<Prisma.BoardCreateWithoutInvitationInput, Prisma.BoardUncheckedCreateWithoutInvitationInput>
+  connectOrCreate?: Prisma.BoardCreateOrConnectWithoutInvitationInput
+  upsert?: Prisma.BoardUpsertWithoutInvitationInput
+  disconnect?: Prisma.BoardWhereInput | boolean
+  delete?: Prisma.BoardWhereInput | boolean
+  connect?: Prisma.BoardWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BoardUpdateToOneWithWhereWithoutInvitationInput, Prisma.BoardUpdateWithoutInvitationInput>, Prisma.BoardUncheckedUpdateWithoutInvitationInput>
+}
+
+export type BoardUncheckedUpdateOneWithoutInvitationNestedInput = {
+  create?: Prisma.XOR<Prisma.BoardCreateWithoutInvitationInput, Prisma.BoardUncheckedCreateWithoutInvitationInput>
+  connectOrCreate?: Prisma.BoardCreateOrConnectWithoutInvitationInput
+  upsert?: Prisma.BoardUpsertWithoutInvitationInput
+  disconnect?: Prisma.BoardWhereInput | boolean
+  delete?: Prisma.BoardWhereInput | boolean
+  connect?: Prisma.BoardWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BoardUpdateToOneWithWhereWithoutInvitationInput, Prisma.BoardUpdateWithoutInvitationInput>, Prisma.BoardUncheckedUpdateWithoutInvitationInput>
 }
 
 export type EnumBoardStatusFieldUpdateOperationsInput = {
@@ -430,6 +513,70 @@ export type BoardUpdateOneRequiredWithoutMemoriesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.BoardUpdateToOneWithWhereWithoutMemoriesInput, Prisma.BoardUpdateWithoutMemoriesInput>, Prisma.BoardUncheckedUpdateWithoutMemoriesInput>
 }
 
+export type BoardCreateWithoutInvitationInput = {
+  id?: string
+  name: string
+  status?: $Enums.BoardStatus
+  photoLimit?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
+  members?: Prisma.BoardMemberCreateNestedManyWithoutBoardInput
+  memories?: Prisma.MemoryCreateNestedManyWithoutBoardInput
+}
+
+export type BoardUncheckedCreateWithoutInvitationInput = {
+  id?: string
+  name: string
+  status?: $Enums.BoardStatus
+  photoLimit?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
+  members?: Prisma.BoardMemberUncheckedCreateNestedManyWithoutBoardInput
+  memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutBoardInput
+}
+
+export type BoardCreateOrConnectWithoutInvitationInput = {
+  where: Prisma.BoardWhereUniqueInput
+  create: Prisma.XOR<Prisma.BoardCreateWithoutInvitationInput, Prisma.BoardUncheckedCreateWithoutInvitationInput>
+}
+
+export type BoardUpsertWithoutInvitationInput = {
+  update: Prisma.XOR<Prisma.BoardUpdateWithoutInvitationInput, Prisma.BoardUncheckedUpdateWithoutInvitationInput>
+  create: Prisma.XOR<Prisma.BoardCreateWithoutInvitationInput, Prisma.BoardUncheckedCreateWithoutInvitationInput>
+  where?: Prisma.BoardWhereInput
+}
+
+export type BoardUpdateToOneWithWhereWithoutInvitationInput = {
+  where?: Prisma.BoardWhereInput
+  data: Prisma.XOR<Prisma.BoardUpdateWithoutInvitationInput, Prisma.BoardUncheckedUpdateWithoutInvitationInput>
+}
+
+export type BoardUpdateWithoutInvitationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumBoardStatusFieldUpdateOperationsInput | $Enums.BoardStatus
+  photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  members?: Prisma.BoardMemberUpdateManyWithoutBoardNestedInput
+  memories?: Prisma.MemoryUpdateManyWithoutBoardNestedInput
+}
+
+export type BoardUncheckedUpdateWithoutInvitationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumBoardStatusFieldUpdateOperationsInput | $Enums.BoardStatus
+  photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  members?: Prisma.BoardMemberUncheckedUpdateManyWithoutBoardNestedInput
+  memories?: Prisma.MemoryUncheckedUpdateManyWithoutBoardNestedInput
+}
+
 export type BoardCreateWithoutMembersInput = {
   id?: string
   name: string
@@ -437,6 +584,8 @@ export type BoardCreateWithoutMembersInput = {
   photoLimit?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  archivedAt?: Date | string | null
+  invitation?: Prisma.InvitationCreateNestedOneWithoutBoardInput
   memories?: Prisma.MemoryCreateNestedManyWithoutBoardInput
 }
 
@@ -445,8 +594,10 @@ export type BoardUncheckedCreateWithoutMembersInput = {
   name: string
   status?: $Enums.BoardStatus
   photoLimit?: number
+  invitationId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  archivedAt?: Date | string | null
   memories?: Prisma.MemoryUncheckedCreateNestedManyWithoutBoardInput
 }
 
@@ -473,6 +624,8 @@ export type BoardUpdateWithoutMembersInput = {
   photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invitation?: Prisma.InvitationUpdateOneWithoutBoardNestedInput
   memories?: Prisma.MemoryUpdateManyWithoutBoardNestedInput
 }
 
@@ -481,8 +634,10 @@ export type BoardUncheckedUpdateWithoutMembersInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumBoardStatusFieldUpdateOperationsInput | $Enums.BoardStatus
   photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  invitationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   memories?: Prisma.MemoryUncheckedUpdateManyWithoutBoardNestedInput
 }
 
@@ -493,6 +648,8 @@ export type BoardCreateWithoutMemoriesInput = {
   photoLimit?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  archivedAt?: Date | string | null
+  invitation?: Prisma.InvitationCreateNestedOneWithoutBoardInput
   members?: Prisma.BoardMemberCreateNestedManyWithoutBoardInput
 }
 
@@ -501,8 +658,10 @@ export type BoardUncheckedCreateWithoutMemoriesInput = {
   name: string
   status?: $Enums.BoardStatus
   photoLimit?: number
+  invitationId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  archivedAt?: Date | string | null
   members?: Prisma.BoardMemberUncheckedCreateNestedManyWithoutBoardInput
 }
 
@@ -529,6 +688,8 @@ export type BoardUpdateWithoutMemoriesInput = {
   photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invitation?: Prisma.InvitationUpdateOneWithoutBoardNestedInput
   members?: Prisma.BoardMemberUpdateManyWithoutBoardNestedInput
 }
 
@@ -537,8 +698,10 @@ export type BoardUncheckedUpdateWithoutMemoriesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumBoardStatusFieldUpdateOperationsInput | $Enums.BoardStatus
   photoLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  invitationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   members?: Prisma.BoardMemberUncheckedUpdateManyWithoutBoardNestedInput
 }
 
@@ -587,8 +750,11 @@ export type BoardSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   name?: boolean
   status?: boolean
   photoLimit?: boolean
+  invitationId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  archivedAt?: boolean
+  invitation?: boolean | Prisma.Board$invitationArgs<ExtArgs>
   members?: boolean | Prisma.Board$membersArgs<ExtArgs>
   memories?: boolean | Prisma.Board$memoriesArgs<ExtArgs>
   _count?: boolean | Prisma.BoardCountOutputTypeDefaultArgs<ExtArgs>
@@ -599,8 +765,11 @@ export type BoardSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   name?: boolean
   status?: boolean
   photoLimit?: boolean
+  invitationId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  archivedAt?: boolean
+  invitation?: boolean | Prisma.Board$invitationArgs<ExtArgs>
 }, ExtArgs["result"]["board"]>
 
 export type BoardSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -608,8 +777,11 @@ export type BoardSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   name?: boolean
   status?: boolean
   photoLimit?: boolean
+  invitationId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  archivedAt?: boolean
+  invitation?: boolean | Prisma.Board$invitationArgs<ExtArgs>
 }, ExtArgs["result"]["board"]>
 
 export type BoardSelectScalar = {
@@ -617,22 +789,30 @@ export type BoardSelectScalar = {
   name?: boolean
   status?: boolean
   photoLimit?: boolean
+  invitationId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  archivedAt?: boolean
 }
 
-export type BoardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "status" | "photoLimit" | "createdAt" | "updatedAt", ExtArgs["result"]["board"]>
+export type BoardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "status" | "photoLimit" | "invitationId" | "createdAt" | "updatedAt" | "archivedAt", ExtArgs["result"]["board"]>
 export type BoardInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  invitation?: boolean | Prisma.Board$invitationArgs<ExtArgs>
   members?: boolean | Prisma.Board$membersArgs<ExtArgs>
   memories?: boolean | Prisma.Board$memoriesArgs<ExtArgs>
   _count?: boolean | Prisma.BoardCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type BoardIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type BoardIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type BoardIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  invitation?: boolean | Prisma.Board$invitationArgs<ExtArgs>
+}
+export type BoardIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  invitation?: boolean | Prisma.Board$invitationArgs<ExtArgs>
+}
 
 export type $BoardPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Board"
   objects: {
+    invitation: Prisma.$InvitationPayload<ExtArgs> | null
     members: Prisma.$BoardMemberPayload<ExtArgs>[]
     memories: Prisma.$MemoryPayload<ExtArgs>[]
   }
@@ -641,8 +821,10 @@ export type $BoardPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     name: string
     status: $Enums.BoardStatus
     photoLimit: number
+    invitationId: string | null
     createdAt: Date
     updatedAt: Date
+    archivedAt: Date | null
   }, ExtArgs["result"]["board"]>
   composites: {}
 }
@@ -1037,6 +1219,7 @@ readonly fields: BoardFieldRefs;
  */
 export interface Prisma__BoardClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  invitation<T extends Prisma.Board$invitationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Board$invitationArgs<ExtArgs>>): Prisma.Prisma__InvitationClient<runtime.Types.Result.GetResult<Prisma.$InvitationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   members<T extends Prisma.Board$membersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Board$membersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BoardMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   memories<T extends Prisma.Board$memoriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Board$memoriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1072,8 +1255,10 @@ export interface BoardFieldRefs {
   readonly name: Prisma.FieldRef<"Board", 'String'>
   readonly status: Prisma.FieldRef<"Board", 'BoardStatus'>
   readonly photoLimit: Prisma.FieldRef<"Board", 'Int'>
+  readonly invitationId: Prisma.FieldRef<"Board", 'String'>
   readonly createdAt: Prisma.FieldRef<"Board", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Board", 'DateTime'>
+  readonly archivedAt: Prisma.FieldRef<"Board", 'DateTime'>
 }
     
 
@@ -1328,6 +1513,10 @@ export type BoardCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extension
    */
   data: Prisma.BoardCreateManyInput | Prisma.BoardCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BoardIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1398,6 +1587,10 @@ export type BoardUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extension
    * Limit how many Boards to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BoardIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1464,6 +1657,25 @@ export type BoardDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Limit how many Boards to delete.
    */
   limit?: number
+}
+
+/**
+ * Board.invitation
+ */
+export type Board$invitationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Invitation
+   */
+  select?: Prisma.InvitationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Invitation
+   */
+  omit?: Prisma.InvitationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.InvitationInclude<ExtArgs> | null
+  where?: Prisma.InvitationWhereInput
 }
 
 /**
