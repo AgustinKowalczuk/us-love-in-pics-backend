@@ -39,6 +39,8 @@ export type MemoryMediaMinAggregateOutputType = {
   memoryId: string | null
   mediaType: $Enums.MediaType | null
   storageKey: string | null
+  takenAt: Date | null
+  description: string | null
   position: number | null
   createdAt: Date | null
 }
@@ -48,6 +50,8 @@ export type MemoryMediaMaxAggregateOutputType = {
   memoryId: string | null
   mediaType: $Enums.MediaType | null
   storageKey: string | null
+  takenAt: Date | null
+  description: string | null
   position: number | null
   createdAt: Date | null
 }
@@ -57,6 +61,8 @@ export type MemoryMediaCountAggregateOutputType = {
   memoryId: number
   mediaType: number
   storageKey: number
+  takenAt: number
+  description: number
   position: number
   createdAt: number
   _all: number
@@ -76,6 +82,8 @@ export type MemoryMediaMinAggregateInputType = {
   memoryId?: true
   mediaType?: true
   storageKey?: true
+  takenAt?: true
+  description?: true
   position?: true
   createdAt?: true
 }
@@ -85,6 +93,8 @@ export type MemoryMediaMaxAggregateInputType = {
   memoryId?: true
   mediaType?: true
   storageKey?: true
+  takenAt?: true
+  description?: true
   position?: true
   createdAt?: true
 }
@@ -94,6 +104,8 @@ export type MemoryMediaCountAggregateInputType = {
   memoryId?: true
   mediaType?: true
   storageKey?: true
+  takenAt?: true
+  description?: true
   position?: true
   createdAt?: true
   _all?: true
@@ -190,6 +202,8 @@ export type MemoryMediaGroupByOutputType = {
   memoryId: string
   mediaType: $Enums.MediaType
   storageKey: string
+  takenAt: Date | null
+  description: string | null
   position: number
   createdAt: Date
   _count: MemoryMediaCountAggregateOutputType | null
@@ -222,6 +236,8 @@ export type MemoryMediaWhereInput = {
   memoryId?: Prisma.UuidFilter<"MemoryMedia"> | string
   mediaType?: Prisma.EnumMediaTypeFilter<"MemoryMedia"> | $Enums.MediaType
   storageKey?: Prisma.StringFilter<"MemoryMedia"> | string
+  takenAt?: Prisma.DateTimeNullableFilter<"MemoryMedia"> | Date | string | null
+  description?: Prisma.StringNullableFilter<"MemoryMedia"> | string | null
   position?: Prisma.IntFilter<"MemoryMedia"> | number
   createdAt?: Prisma.DateTimeFilter<"MemoryMedia"> | Date | string
   memory?: Prisma.XOR<Prisma.MemoryScalarRelationFilter, Prisma.MemoryWhereInput>
@@ -232,6 +248,8 @@ export type MemoryMediaOrderByWithRelationInput = {
   memoryId?: Prisma.SortOrder
   mediaType?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
+  takenAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   memory?: Prisma.MemoryOrderByWithRelationInput
@@ -239,22 +257,27 @@ export type MemoryMediaOrderByWithRelationInput = {
 
 export type MemoryMediaWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  memoryId_position?: Prisma.MemoryMediaMemoryIdPositionCompoundUniqueInput
   AND?: Prisma.MemoryMediaWhereInput | Prisma.MemoryMediaWhereInput[]
   OR?: Prisma.MemoryMediaWhereInput[]
   NOT?: Prisma.MemoryMediaWhereInput | Prisma.MemoryMediaWhereInput[]
   memoryId?: Prisma.UuidFilter<"MemoryMedia"> | string
   mediaType?: Prisma.EnumMediaTypeFilter<"MemoryMedia"> | $Enums.MediaType
   storageKey?: Prisma.StringFilter<"MemoryMedia"> | string
+  takenAt?: Prisma.DateTimeNullableFilter<"MemoryMedia"> | Date | string | null
+  description?: Prisma.StringNullableFilter<"MemoryMedia"> | string | null
   position?: Prisma.IntFilter<"MemoryMedia"> | number
   createdAt?: Prisma.DateTimeFilter<"MemoryMedia"> | Date | string
   memory?: Prisma.XOR<Prisma.MemoryScalarRelationFilter, Prisma.MemoryWhereInput>
-}, "id">
+}, "id" | "memoryId_position">
 
 export type MemoryMediaOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   memoryId?: Prisma.SortOrder
   mediaType?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
+  takenAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
   position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.MemoryMediaCountOrderByAggregateInput
@@ -272,6 +295,8 @@ export type MemoryMediaScalarWhereWithAggregatesInput = {
   memoryId?: Prisma.UuidWithAggregatesFilter<"MemoryMedia"> | string
   mediaType?: Prisma.EnumMediaTypeWithAggregatesFilter<"MemoryMedia"> | $Enums.MediaType
   storageKey?: Prisma.StringWithAggregatesFilter<"MemoryMedia"> | string
+  takenAt?: Prisma.DateTimeNullableWithAggregatesFilter<"MemoryMedia"> | Date | string | null
+  description?: Prisma.StringNullableWithAggregatesFilter<"MemoryMedia"> | string | null
   position?: Prisma.IntWithAggregatesFilter<"MemoryMedia"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"MemoryMedia"> | Date | string
 }
@@ -280,7 +305,9 @@ export type MemoryMediaCreateInput = {
   id?: string
   mediaType: $Enums.MediaType
   storageKey: string
-  position?: number
+  takenAt?: Date | string | null
+  description?: string | null
+  position: number
   createdAt?: Date | string
   memory: Prisma.MemoryCreateNestedOneWithoutMediaInput
 }
@@ -290,7 +317,9 @@ export type MemoryMediaUncheckedCreateInput = {
   memoryId: string
   mediaType: $Enums.MediaType
   storageKey: string
-  position?: number
+  takenAt?: Date | string | null
+  description?: string | null
+  position: number
   createdAt?: Date | string
 }
 
@@ -298,6 +327,8 @@ export type MemoryMediaUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   mediaType?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
+  takenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memory?: Prisma.MemoryUpdateOneRequiredWithoutMediaNestedInput
@@ -308,6 +339,8 @@ export type MemoryMediaUncheckedUpdateInput = {
   memoryId?: Prisma.StringFieldUpdateOperationsInput | string
   mediaType?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
+  takenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -317,7 +350,9 @@ export type MemoryMediaCreateManyInput = {
   memoryId: string
   mediaType: $Enums.MediaType
   storageKey: string
-  position?: number
+  takenAt?: Date | string | null
+  description?: string | null
+  position: number
   createdAt?: Date | string
 }
 
@@ -325,6 +360,8 @@ export type MemoryMediaUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   mediaType?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
+  takenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -334,6 +371,8 @@ export type MemoryMediaUncheckedUpdateManyInput = {
   memoryId?: Prisma.StringFieldUpdateOperationsInput | string
   mediaType?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
+  takenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -348,11 +387,18 @@ export type MemoryMediaOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type MemoryMediaMemoryIdPositionCompoundUniqueInput = {
+  memoryId: string
+  position: number
+}
+
 export type MemoryMediaCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   memoryId?: Prisma.SortOrder
   mediaType?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
+  takenAt?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -366,6 +412,8 @@ export type MemoryMediaMaxOrderByAggregateInput = {
   memoryId?: Prisma.SortOrder
   mediaType?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
+  takenAt?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -375,6 +423,8 @@ export type MemoryMediaMinOrderByAggregateInput = {
   memoryId?: Prisma.SortOrder
   mediaType?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
+  takenAt?: Prisma.SortOrder
+  description?: Prisma.SortOrder
   position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -433,7 +483,9 @@ export type MemoryMediaCreateWithoutMemoryInput = {
   id?: string
   mediaType: $Enums.MediaType
   storageKey: string
-  position?: number
+  takenAt?: Date | string | null
+  description?: string | null
+  position: number
   createdAt?: Date | string
 }
 
@@ -441,7 +493,9 @@ export type MemoryMediaUncheckedCreateWithoutMemoryInput = {
   id?: string
   mediaType: $Enums.MediaType
   storageKey: string
-  position?: number
+  takenAt?: Date | string | null
+  description?: string | null
+  position: number
   createdAt?: Date | string
 }
 
@@ -479,6 +533,8 @@ export type MemoryMediaScalarWhereInput = {
   memoryId?: Prisma.UuidFilter<"MemoryMedia"> | string
   mediaType?: Prisma.EnumMediaTypeFilter<"MemoryMedia"> | $Enums.MediaType
   storageKey?: Prisma.StringFilter<"MemoryMedia"> | string
+  takenAt?: Prisma.DateTimeNullableFilter<"MemoryMedia"> | Date | string | null
+  description?: Prisma.StringNullableFilter<"MemoryMedia"> | string | null
   position?: Prisma.IntFilter<"MemoryMedia"> | number
   createdAt?: Prisma.DateTimeFilter<"MemoryMedia"> | Date | string
 }
@@ -487,7 +543,9 @@ export type MemoryMediaCreateManyMemoryInput = {
   id?: string
   mediaType: $Enums.MediaType
   storageKey: string
-  position?: number
+  takenAt?: Date | string | null
+  description?: string | null
+  position: number
   createdAt?: Date | string
 }
 
@@ -495,6 +553,8 @@ export type MemoryMediaUpdateWithoutMemoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   mediaType?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
+  takenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -503,6 +563,8 @@ export type MemoryMediaUncheckedUpdateWithoutMemoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   mediaType?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
+  takenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -511,6 +573,8 @@ export type MemoryMediaUncheckedUpdateManyWithoutMemoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   mediaType?: Prisma.EnumMediaTypeFieldUpdateOperationsInput | $Enums.MediaType
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
+  takenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -522,6 +586,8 @@ export type MemoryMediaSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   memoryId?: boolean
   mediaType?: boolean
   storageKey?: boolean
+  takenAt?: boolean
+  description?: boolean
   position?: boolean
   createdAt?: boolean
   memory?: boolean | Prisma.MemoryDefaultArgs<ExtArgs>
@@ -532,6 +598,8 @@ export type MemoryMediaSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   memoryId?: boolean
   mediaType?: boolean
   storageKey?: boolean
+  takenAt?: boolean
+  description?: boolean
   position?: boolean
   createdAt?: boolean
   memory?: boolean | Prisma.MemoryDefaultArgs<ExtArgs>
@@ -542,6 +610,8 @@ export type MemoryMediaSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   memoryId?: boolean
   mediaType?: boolean
   storageKey?: boolean
+  takenAt?: boolean
+  description?: boolean
   position?: boolean
   createdAt?: boolean
   memory?: boolean | Prisma.MemoryDefaultArgs<ExtArgs>
@@ -552,11 +622,13 @@ export type MemoryMediaSelectScalar = {
   memoryId?: boolean
   mediaType?: boolean
   storageKey?: boolean
+  takenAt?: boolean
+  description?: boolean
   position?: boolean
   createdAt?: boolean
 }
 
-export type MemoryMediaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memoryId" | "mediaType" | "storageKey" | "position" | "createdAt", ExtArgs["result"]["memoryMedia"]>
+export type MemoryMediaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memoryId" | "mediaType" | "storageKey" | "takenAt" | "description" | "position" | "createdAt", ExtArgs["result"]["memoryMedia"]>
 export type MemoryMediaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   memory?: boolean | Prisma.MemoryDefaultArgs<ExtArgs>
 }
@@ -577,6 +649,8 @@ export type $MemoryMediaPayload<ExtArgs extends runtime.Types.Extensions.Interna
     memoryId: string
     mediaType: $Enums.MediaType
     storageKey: string
+    takenAt: Date | null
+    description: string | null
     position: number
     createdAt: Date
   }, ExtArgs["result"]["memoryMedia"]>
@@ -1007,6 +1081,8 @@ export interface MemoryMediaFieldRefs {
   readonly memoryId: Prisma.FieldRef<"MemoryMedia", 'String'>
   readonly mediaType: Prisma.FieldRef<"MemoryMedia", 'MediaType'>
   readonly storageKey: Prisma.FieldRef<"MemoryMedia", 'String'>
+  readonly takenAt: Prisma.FieldRef<"MemoryMedia", 'DateTime'>
+  readonly description: Prisma.FieldRef<"MemoryMedia", 'String'>
   readonly position: Prisma.FieldRef<"MemoryMedia", 'Int'>
   readonly createdAt: Prisma.FieldRef<"MemoryMedia", 'DateTime'>
 }

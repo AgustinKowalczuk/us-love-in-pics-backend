@@ -20,16 +20,26 @@ export type MemoryModel = runtime.Types.Result.DefaultSelection<Prisma.$MemoryPa
 
 export type AggregateMemory = {
   _count: MemoryCountAggregateOutputType | null
+  _avg: MemoryAvgAggregateOutputType | null
+  _sum: MemorySumAggregateOutputType | null
   _min: MemoryMinAggregateOutputType | null
   _max: MemoryMaxAggregateOutputType | null
+}
+
+export type MemoryAvgAggregateOutputType = {
+  position: number | null
+}
+
+export type MemorySumAggregateOutputType = {
+  position: number | null
 }
 
 export type MemoryMinAggregateOutputType = {
   id: string | null
   boardId: string | null
   authorId: string | null
-  type: $Enums.MemoryType | null
-  text: string | null
+  memoryDate: Date | null
+  position: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -38,8 +48,8 @@ export type MemoryMaxAggregateOutputType = {
   id: string | null
   boardId: string | null
   authorId: string | null
-  type: $Enums.MemoryType | null
-  text: string | null
+  memoryDate: Date | null
+  position: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -48,20 +58,28 @@ export type MemoryCountAggregateOutputType = {
   id: number
   boardId: number
   authorId: number
-  type: number
-  text: number
+  memoryDate: number
+  position: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
 
+export type MemoryAvgAggregateInputType = {
+  position?: true
+}
+
+export type MemorySumAggregateInputType = {
+  position?: true
+}
+
 export type MemoryMinAggregateInputType = {
   id?: true
   boardId?: true
   authorId?: true
-  type?: true
-  text?: true
+  memoryDate?: true
+  position?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -70,8 +88,8 @@ export type MemoryMaxAggregateInputType = {
   id?: true
   boardId?: true
   authorId?: true
-  type?: true
-  text?: true
+  memoryDate?: true
+  position?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -80,8 +98,8 @@ export type MemoryCountAggregateInputType = {
   id?: true
   boardId?: true
   authorId?: true
-  type?: true
-  text?: true
+  memoryDate?: true
+  position?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -125,6 +143,18 @@ export type MemoryAggregateArgs<ExtArgs extends runtime.Types.Extensions.Interna
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: MemoryAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: MemorySumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: MemoryMinAggregateInputType
@@ -155,6 +185,8 @@ export type MemoryGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   _count?: MemoryCountAggregateInputType | true
+  _avg?: MemoryAvgAggregateInputType
+  _sum?: MemorySumAggregateInputType
   _min?: MemoryMinAggregateInputType
   _max?: MemoryMaxAggregateInputType
 }
@@ -163,11 +195,13 @@ export type MemoryGroupByOutputType = {
   id: string
   boardId: string
   authorId: string
-  type: $Enums.MemoryType
-  text: string | null
+  memoryDate: Date
+  position: number
   createdAt: Date
   updatedAt: Date
   _count: MemoryCountAggregateOutputType | null
+  _avg: MemoryAvgAggregateOutputType | null
+  _sum: MemorySumAggregateOutputType | null
   _min: MemoryMinAggregateOutputType | null
   _max: MemoryMaxAggregateOutputType | null
 }
@@ -194,55 +228,61 @@ export type MemoryWhereInput = {
   id?: Prisma.UuidFilter<"Memory"> | string
   boardId?: Prisma.UuidFilter<"Memory"> | string
   authorId?: Prisma.UuidFilter<"Memory"> | string
-  type?: Prisma.EnumMemoryTypeFilter<"Memory"> | $Enums.MemoryType
-  text?: Prisma.StringNullableFilter<"Memory"> | string | null
+  memoryDate?: Prisma.DateTimeFilter<"Memory"> | Date | string
+  position?: Prisma.IntFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
   board?: Prisma.XOR<Prisma.BoardScalarRelationFilter, Prisma.BoardWhereInput>
   author?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   media?: Prisma.MemoryMediaListRelationFilter
+  notes?: Prisma.MemoryNoteListRelationFilter
 }
 
 export type MemoryOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   boardId?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  text?: Prisma.SortOrderInput | Prisma.SortOrder
+  memoryDate?: Prisma.SortOrder
+  position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   board?: Prisma.BoardOrderByWithRelationInput
   author?: Prisma.UserOrderByWithRelationInput
   media?: Prisma.MemoryMediaOrderByRelationAggregateInput
+  notes?: Prisma.MemoryNoteOrderByRelationAggregateInput
 }
 
 export type MemoryWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  boardId_position?: Prisma.MemoryBoardIdPositionCompoundUniqueInput
   AND?: Prisma.MemoryWhereInput | Prisma.MemoryWhereInput[]
   OR?: Prisma.MemoryWhereInput[]
   NOT?: Prisma.MemoryWhereInput | Prisma.MemoryWhereInput[]
   boardId?: Prisma.UuidFilter<"Memory"> | string
   authorId?: Prisma.UuidFilter<"Memory"> | string
-  type?: Prisma.EnumMemoryTypeFilter<"Memory"> | $Enums.MemoryType
-  text?: Prisma.StringNullableFilter<"Memory"> | string | null
+  memoryDate?: Prisma.DateTimeFilter<"Memory"> | Date | string
+  position?: Prisma.IntFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
   board?: Prisma.XOR<Prisma.BoardScalarRelationFilter, Prisma.BoardWhereInput>
   author?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   media?: Prisma.MemoryMediaListRelationFilter
-}, "id">
+  notes?: Prisma.MemoryNoteListRelationFilter
+}, "id" | "boardId_position">
 
 export type MemoryOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   boardId?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  text?: Prisma.SortOrderInput | Prisma.SortOrder
+  memoryDate?: Prisma.SortOrder
+  position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.MemoryCountOrderByAggregateInput
+  _avg?: Prisma.MemoryAvgOrderByAggregateInput
   _max?: Prisma.MemoryMaxOrderByAggregateInput
   _min?: Prisma.MemoryMinOrderByAggregateInput
+  _sum?: Prisma.MemorySumOrderByAggregateInput
 }
 
 export type MemoryScalarWhereWithAggregatesInput = {
@@ -252,70 +292,74 @@ export type MemoryScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"Memory"> | string
   boardId?: Prisma.UuidWithAggregatesFilter<"Memory"> | string
   authorId?: Prisma.UuidWithAggregatesFilter<"Memory"> | string
-  type?: Prisma.EnumMemoryTypeWithAggregatesFilter<"Memory"> | $Enums.MemoryType
-  text?: Prisma.StringNullableWithAggregatesFilter<"Memory"> | string | null
+  memoryDate?: Prisma.DateTimeWithAggregatesFilter<"Memory"> | Date | string
+  position?: Prisma.IntWithAggregatesFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Memory"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Memory"> | Date | string
 }
 
 export type MemoryCreateInput = {
   id?: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
   board: Prisma.BoardCreateNestedOneWithoutMemoriesInput
   author: Prisma.UserCreateNestedOneWithoutMemoriesInput
   media?: Prisma.MemoryMediaCreateNestedManyWithoutMemoryInput
+  notes?: Prisma.MemoryNoteCreateNestedManyWithoutMemoryInput
 }
 
 export type MemoryUncheckedCreateInput = {
   id?: string
   boardId: string
   authorId: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
   media?: Prisma.MemoryMediaUncheckedCreateNestedManyWithoutMemoryInput
+  notes?: Prisma.MemoryNoteUncheckedCreateNestedManyWithoutMemoryInput
 }
 
 export type MemoryUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   board?: Prisma.BoardUpdateOneRequiredWithoutMemoriesNestedInput
   author?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
   media?: Prisma.MemoryMediaUpdateManyWithoutMemoryNestedInput
+  notes?: Prisma.MemoryNoteUpdateManyWithoutMemoryNestedInput
 }
 
 export type MemoryUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   boardId?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   media?: Prisma.MemoryMediaUncheckedUpdateManyWithoutMemoryNestedInput
+  notes?: Prisma.MemoryNoteUncheckedUpdateManyWithoutMemoryNestedInput
 }
 
 export type MemoryCreateManyInput = {
   id?: string
   boardId: string
   authorId: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type MemoryUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -324,8 +368,8 @@ export type MemoryUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   boardId?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -340,22 +384,31 @@ export type MemoryOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type MemoryBoardIdPositionCompoundUniqueInput = {
+  boardId: string
+  position: number
+}
+
 export type MemoryCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   boardId?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  text?: Prisma.SortOrder
+  memoryDate?: Prisma.SortOrder
+  position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type MemoryAvgOrderByAggregateInput = {
+  position?: Prisma.SortOrder
 }
 
 export type MemoryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   boardId?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  text?: Prisma.SortOrder
+  memoryDate?: Prisma.SortOrder
+  position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -364,10 +417,14 @@ export type MemoryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   boardId?: Prisma.SortOrder
   authorId?: Prisma.SortOrder
-  type?: Prisma.SortOrder
-  text?: Prisma.SortOrder
+  memoryDate?: Prisma.SortOrder
+  position?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type MemorySumOrderByAggregateInput = {
+  position?: Prisma.SortOrder
 }
 
 export type MemoryScalarRelationFilter = {
@@ -459,10 +516,6 @@ export type MemoryUncheckedUpdateManyWithoutBoardNestedInput = {
   deleteMany?: Prisma.MemoryScalarWhereInput | Prisma.MemoryScalarWhereInput[]
 }
 
-export type EnumMemoryTypeFieldUpdateOperationsInput = {
-  set?: $Enums.MemoryType
-}
-
 export type MemoryCreateNestedOneWithoutMediaInput = {
   create?: Prisma.XOR<Prisma.MemoryCreateWithoutMediaInput, Prisma.MemoryUncheckedCreateWithoutMediaInput>
   connectOrCreate?: Prisma.MemoryCreateOrConnectWithoutMediaInput
@@ -477,24 +530,40 @@ export type MemoryUpdateOneRequiredWithoutMediaNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.MemoryUpdateToOneWithWhereWithoutMediaInput, Prisma.MemoryUpdateWithoutMediaInput>, Prisma.MemoryUncheckedUpdateWithoutMediaInput>
 }
 
+export type MemoryCreateNestedOneWithoutNotesInput = {
+  create?: Prisma.XOR<Prisma.MemoryCreateWithoutNotesInput, Prisma.MemoryUncheckedCreateWithoutNotesInput>
+  connectOrCreate?: Prisma.MemoryCreateOrConnectWithoutNotesInput
+  connect?: Prisma.MemoryWhereUniqueInput
+}
+
+export type MemoryUpdateOneRequiredWithoutNotesNestedInput = {
+  create?: Prisma.XOR<Prisma.MemoryCreateWithoutNotesInput, Prisma.MemoryUncheckedCreateWithoutNotesInput>
+  connectOrCreate?: Prisma.MemoryCreateOrConnectWithoutNotesInput
+  upsert?: Prisma.MemoryUpsertWithoutNotesInput
+  connect?: Prisma.MemoryWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.MemoryUpdateToOneWithWhereWithoutNotesInput, Prisma.MemoryUpdateWithoutNotesInput>, Prisma.MemoryUncheckedUpdateWithoutNotesInput>
+}
+
 export type MemoryCreateWithoutAuthorInput = {
   id?: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
   board: Prisma.BoardCreateNestedOneWithoutMemoriesInput
   media?: Prisma.MemoryMediaCreateNestedManyWithoutMemoryInput
+  notes?: Prisma.MemoryNoteCreateNestedManyWithoutMemoryInput
 }
 
 export type MemoryUncheckedCreateWithoutAuthorInput = {
   id?: string
   boardId: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
   media?: Prisma.MemoryMediaUncheckedCreateNestedManyWithoutMemoryInput
+  notes?: Prisma.MemoryNoteUncheckedCreateNestedManyWithoutMemoryInput
 }
 
 export type MemoryCreateOrConnectWithoutAuthorInput = {
@@ -530,30 +599,32 @@ export type MemoryScalarWhereInput = {
   id?: Prisma.UuidFilter<"Memory"> | string
   boardId?: Prisma.UuidFilter<"Memory"> | string
   authorId?: Prisma.UuidFilter<"Memory"> | string
-  type?: Prisma.EnumMemoryTypeFilter<"Memory"> | $Enums.MemoryType
-  text?: Prisma.StringNullableFilter<"Memory"> | string | null
+  memoryDate?: Prisma.DateTimeFilter<"Memory"> | Date | string
+  position?: Prisma.IntFilter<"Memory"> | number
   createdAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Memory"> | Date | string
 }
 
 export type MemoryCreateWithoutBoardInput = {
   id?: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
   author: Prisma.UserCreateNestedOneWithoutMemoriesInput
   media?: Prisma.MemoryMediaCreateNestedManyWithoutMemoryInput
+  notes?: Prisma.MemoryNoteCreateNestedManyWithoutMemoryInput
 }
 
 export type MemoryUncheckedCreateWithoutBoardInput = {
   id?: string
   authorId: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
   media?: Prisma.MemoryMediaUncheckedCreateNestedManyWithoutMemoryInput
+  notes?: Prisma.MemoryNoteUncheckedCreateNestedManyWithoutMemoryInput
 }
 
 export type MemoryCreateOrConnectWithoutBoardInput = {
@@ -584,22 +655,24 @@ export type MemoryUpdateManyWithWhereWithoutBoardInput = {
 
 export type MemoryCreateWithoutMediaInput = {
   id?: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
   board: Prisma.BoardCreateNestedOneWithoutMemoriesInput
   author: Prisma.UserCreateNestedOneWithoutMemoriesInput
+  notes?: Prisma.MemoryNoteCreateNestedManyWithoutMemoryInput
 }
 
 export type MemoryUncheckedCreateWithoutMediaInput = {
   id?: string
   boardId: string
   authorId: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  notes?: Prisma.MemoryNoteUncheckedCreateNestedManyWithoutMemoryInput
 }
 
 export type MemoryCreateOrConnectWithoutMediaInput = {
@@ -620,58 +693,122 @@ export type MemoryUpdateToOneWithWhereWithoutMediaInput = {
 
 export type MemoryUpdateWithoutMediaInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   board?: Prisma.BoardUpdateOneRequiredWithoutMemoriesNestedInput
   author?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
+  notes?: Prisma.MemoryNoteUpdateManyWithoutMemoryNestedInput
 }
 
 export type MemoryUncheckedUpdateWithoutMediaInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   boardId?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  notes?: Prisma.MemoryNoteUncheckedUpdateManyWithoutMemoryNestedInput
+}
+
+export type MemoryCreateWithoutNotesInput = {
+  id?: string
+  memoryDate: Date | string
+  position: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  board: Prisma.BoardCreateNestedOneWithoutMemoriesInput
+  author: Prisma.UserCreateNestedOneWithoutMemoriesInput
+  media?: Prisma.MemoryMediaCreateNestedManyWithoutMemoryInput
+}
+
+export type MemoryUncheckedCreateWithoutNotesInput = {
+  id?: string
+  boardId: string
+  authorId: string
+  memoryDate: Date | string
+  position: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  media?: Prisma.MemoryMediaUncheckedCreateNestedManyWithoutMemoryInput
+}
+
+export type MemoryCreateOrConnectWithoutNotesInput = {
+  where: Prisma.MemoryWhereUniqueInput
+  create: Prisma.XOR<Prisma.MemoryCreateWithoutNotesInput, Prisma.MemoryUncheckedCreateWithoutNotesInput>
+}
+
+export type MemoryUpsertWithoutNotesInput = {
+  update: Prisma.XOR<Prisma.MemoryUpdateWithoutNotesInput, Prisma.MemoryUncheckedUpdateWithoutNotesInput>
+  create: Prisma.XOR<Prisma.MemoryCreateWithoutNotesInput, Prisma.MemoryUncheckedCreateWithoutNotesInput>
+  where?: Prisma.MemoryWhereInput
+}
+
+export type MemoryUpdateToOneWithWhereWithoutNotesInput = {
+  where?: Prisma.MemoryWhereInput
+  data: Prisma.XOR<Prisma.MemoryUpdateWithoutNotesInput, Prisma.MemoryUncheckedUpdateWithoutNotesInput>
+}
+
+export type MemoryUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  board?: Prisma.BoardUpdateOneRequiredWithoutMemoriesNestedInput
+  author?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
+  media?: Prisma.MemoryMediaUpdateManyWithoutMemoryNestedInput
+}
+
+export type MemoryUncheckedUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  boardId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorId?: Prisma.StringFieldUpdateOperationsInput | string
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  media?: Prisma.MemoryMediaUncheckedUpdateManyWithoutMemoryNestedInput
 }
 
 export type MemoryCreateManyAuthorInput = {
   id?: string
   boardId: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type MemoryUpdateWithoutAuthorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   board?: Prisma.BoardUpdateOneRequiredWithoutMemoriesNestedInput
   media?: Prisma.MemoryMediaUpdateManyWithoutMemoryNestedInput
+  notes?: Prisma.MemoryNoteUpdateManyWithoutMemoryNestedInput
 }
 
 export type MemoryUncheckedUpdateWithoutAuthorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   boardId?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   media?: Prisma.MemoryMediaUncheckedUpdateManyWithoutMemoryNestedInput
+  notes?: Prisma.MemoryNoteUncheckedUpdateManyWithoutMemoryNestedInput
 }
 
 export type MemoryUncheckedUpdateManyWithoutAuthorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   boardId?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -679,37 +816,39 @@ export type MemoryUncheckedUpdateManyWithoutAuthorInput = {
 export type MemoryCreateManyBoardInput = {
   id?: string
   authorId: string
-  type: $Enums.MemoryType
-  text?: string | null
+  memoryDate: Date | string
+  position: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type MemoryUpdateWithoutBoardInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   author?: Prisma.UserUpdateOneRequiredWithoutMemoriesNestedInput
   media?: Prisma.MemoryMediaUpdateManyWithoutMemoryNestedInput
+  notes?: Prisma.MemoryNoteUpdateManyWithoutMemoryNestedInput
 }
 
 export type MemoryUncheckedUpdateWithoutBoardInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   media?: Prisma.MemoryMediaUncheckedUpdateManyWithoutMemoryNestedInput
+  notes?: Prisma.MemoryNoteUncheckedUpdateManyWithoutMemoryNestedInput
 }
 
 export type MemoryUncheckedUpdateManyWithoutBoardInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   authorId?: Prisma.StringFieldUpdateOperationsInput | string
-  type?: Prisma.EnumMemoryTypeFieldUpdateOperationsInput | $Enums.MemoryType
-  text?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  memoryDate?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  position?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -721,10 +860,12 @@ export type MemoryUncheckedUpdateManyWithoutBoardInput = {
 
 export type MemoryCountOutputType = {
   media: number
+  notes: number
 }
 
 export type MemoryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   media?: boolean | MemoryCountOutputTypeCountMediaArgs
+  notes?: boolean | MemoryCountOutputTypeCountNotesArgs
 }
 
 /**
@@ -744,18 +885,26 @@ export type MemoryCountOutputTypeCountMediaArgs<ExtArgs extends runtime.Types.Ex
   where?: Prisma.MemoryMediaWhereInput
 }
 
+/**
+ * MemoryCountOutputType without action
+ */
+export type MemoryCountOutputTypeCountNotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MemoryNoteWhereInput
+}
+
 
 export type MemorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   boardId?: boolean
   authorId?: boolean
-  type?: boolean
-  text?: boolean
+  memoryDate?: boolean
+  position?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   board?: boolean | Prisma.BoardDefaultArgs<ExtArgs>
   author?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   media?: boolean | Prisma.Memory$mediaArgs<ExtArgs>
+  notes?: boolean | Prisma.Memory$notesArgs<ExtArgs>
   _count?: boolean | Prisma.MemoryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["memory"]>
 
@@ -763,8 +912,8 @@ export type MemorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   id?: boolean
   boardId?: boolean
   authorId?: boolean
-  type?: boolean
-  text?: boolean
+  memoryDate?: boolean
+  position?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   board?: boolean | Prisma.BoardDefaultArgs<ExtArgs>
@@ -775,8 +924,8 @@ export type MemorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   id?: boolean
   boardId?: boolean
   authorId?: boolean
-  type?: boolean
-  text?: boolean
+  memoryDate?: boolean
+  position?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   board?: boolean | Prisma.BoardDefaultArgs<ExtArgs>
@@ -787,17 +936,18 @@ export type MemorySelectScalar = {
   id?: boolean
   boardId?: boolean
   authorId?: boolean
-  type?: boolean
-  text?: boolean
+  memoryDate?: boolean
+  position?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type MemoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "boardId" | "authorId" | "type" | "text" | "createdAt" | "updatedAt", ExtArgs["result"]["memory"]>
+export type MemoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "boardId" | "authorId" | "memoryDate" | "position" | "createdAt" | "updatedAt", ExtArgs["result"]["memory"]>
 export type MemoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   board?: boolean | Prisma.BoardDefaultArgs<ExtArgs>
   author?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   media?: boolean | Prisma.Memory$mediaArgs<ExtArgs>
+  notes?: boolean | Prisma.Memory$notesArgs<ExtArgs>
   _count?: boolean | Prisma.MemoryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type MemoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -815,13 +965,14 @@ export type $MemoryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     board: Prisma.$BoardPayload<ExtArgs>
     author: Prisma.$UserPayload<ExtArgs>
     media: Prisma.$MemoryMediaPayload<ExtArgs>[]
+    notes: Prisma.$MemoryNotePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     boardId: string
     authorId: string
-    type: $Enums.MemoryType
-    text: string | null
+    memoryDate: Date
+    position: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["memory"]>
@@ -1221,6 +1372,7 @@ export interface Prisma__MemoryClient<T, Null = never, ExtArgs extends runtime.T
   board<T extends Prisma.BoardDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BoardDefaultArgs<ExtArgs>>): Prisma.Prisma__BoardClient<runtime.Types.Result.GetResult<Prisma.$BoardPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   author<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   media<T extends Prisma.Memory$mediaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Memory$mediaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemoryMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  notes<T extends Prisma.Memory$notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Memory$notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MemoryNotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1253,8 +1405,8 @@ export interface MemoryFieldRefs {
   readonly id: Prisma.FieldRef<"Memory", 'String'>
   readonly boardId: Prisma.FieldRef<"Memory", 'String'>
   readonly authorId: Prisma.FieldRef<"Memory", 'String'>
-  readonly type: Prisma.FieldRef<"Memory", 'MemoryType'>
-  readonly text: Prisma.FieldRef<"Memory", 'String'>
+  readonly memoryDate: Prisma.FieldRef<"Memory", 'DateTime'>
+  readonly position: Prisma.FieldRef<"Memory", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Memory", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Memory", 'DateTime'>
 }
@@ -1679,6 +1831,30 @@ export type Memory$mediaArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
   take?: number
   skip?: number
   distinct?: Prisma.MemoryMediaScalarFieldEnum | Prisma.MemoryMediaScalarFieldEnum[]
+}
+
+/**
+ * Memory.notes
+ */
+export type Memory$notesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the MemoryNote
+   */
+  select?: Prisma.MemoryNoteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the MemoryNote
+   */
+  omit?: Prisma.MemoryNoteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MemoryNoteInclude<ExtArgs> | null
+  where?: Prisma.MemoryNoteWhereInput
+  orderBy?: Prisma.MemoryNoteOrderByWithRelationInput | Prisma.MemoryNoteOrderByWithRelationInput[]
+  cursor?: Prisma.MemoryNoteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MemoryNoteScalarFieldEnum | Prisma.MemoryNoteScalarFieldEnum[]
 }
 
 /**

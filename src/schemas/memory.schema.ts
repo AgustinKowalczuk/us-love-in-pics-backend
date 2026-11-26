@@ -1,33 +1,30 @@
 import { z } from "zod";
 
 /**
- * Validates the data required to create a memory.
+ * Validates a date-only value in YYYY-MM-DD format.
+ */
+const memoryDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid memory date")
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00.000Z`);
+
+    return (
+      !Number.isNaN(date.getTime()) &&
+      date.toISOString().slice(0, 10) === value
+    );
+  }, "Invalid memory date");
+
+/**
+ * Validates the data required to create a memory pin.
  */
 export const createMemorySchema = z
   .object({
     boardId: z.string().uuid("Invalid board ID"),
-    type: z.enum(["NOTE", "PHOTO", "GIF"]),
-    text: z.string().trim().max(5000).nullable().optional(),
+    memoryDate: memoryDateSchema,
+    position: z.number().int().min(1).max(13),
   })
-  .superRefine((data, ctx) => {
-    if (data.type === "NOTE" && !data.text?.trim()) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["text"],
-        message: "Notes must contain text",
-      });
-    }
-
-    if (data.type === "PHOTO" || data.type === "GIF") {
-      if (data.text?.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["text"],
-          message: "Media memories cannot contain text",
-        });
-      }
-    }
-  });
+  .strict();
 
 /**
  * Validates the memory ID URL parameter.
@@ -44,10 +41,16 @@ export const memoryBoardParamsSchema = z.object({
 });
 
 /**
- * Validates the data required to update a memory.
+ * Validates the data required to update a memory pin.
  */
 export const updateMemorySchema = z
   .object({
-    text: z.string().trim().min(1).max(5000),
+    memoryDate: memoryDateSchema.optional(),
+    position: z.number().int().min(1).max(13).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (data) =>
+      data.memoryDate !== undefined || data.position !== undefined,
+    "At least one field must be provided",
+  );

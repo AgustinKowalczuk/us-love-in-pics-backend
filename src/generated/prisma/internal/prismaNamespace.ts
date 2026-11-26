@@ -403,6 +403,7 @@ export const ModelName = {
   BoardMember: 'BoardMember',
   Memory: 'Memory',
   MemoryMedia: 'MemoryMedia',
+  MemoryNote: 'MemoryNote',
   EmailVerificationToken: 'EmailVerificationToken',
   UserSession: 'UserSession'
 } as const
@@ -420,7 +421,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "invitation" | "board" | "boardMember" | "memory" | "memoryMedia" | "emailVerificationToken" | "userSession"
+    modelProps: "user" | "invitation" | "board" | "boardMember" | "memory" | "memoryMedia" | "memoryNote" | "emailVerificationToken" | "userSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -868,6 +869,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    MemoryNote: {
+      payload: Prisma.$MemoryNotePayload<ExtArgs>
+      fields: Prisma.MemoryNoteFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MemoryNoteFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MemoryNoteFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload>
+        }
+        findFirst: {
+          args: Prisma.MemoryNoteFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MemoryNoteFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload>
+        }
+        findMany: {
+          args: Prisma.MemoryNoteFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload>[]
+        }
+        create: {
+          args: Prisma.MemoryNoteCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload>
+        }
+        createMany: {
+          args: Prisma.MemoryNoteCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MemoryNoteCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload>[]
+        }
+        delete: {
+          args: Prisma.MemoryNoteDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload>
+        }
+        update: {
+          args: Prisma.MemoryNoteUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload>
+        }
+        deleteMany: {
+          args: Prisma.MemoryNoteDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MemoryNoteUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MemoryNoteUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload>[]
+        }
+        upsert: {
+          args: Prisma.MemoryNoteUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoryNotePayload>
+        }
+        aggregate: {
+          args: Prisma.MemoryNoteAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMemoryNote>
+        }
+        groupBy: {
+          args: Prisma.MemoryNoteGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MemoryNoteGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MemoryNoteCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MemoryNoteCountAggregateOutputType> | number
+        }
+      }
+    }
     EmailVerificationToken: {
       payload: Prisma.$EmailVerificationTokenPayload<ExtArgs>
       fields: Prisma.EmailVerificationTokenFieldRefs
@@ -1117,8 +1192,8 @@ export const MemoryScalarFieldEnum = {
   id: 'id',
   boardId: 'boardId',
   authorId: 'authorId',
-  type: 'type',
-  text: 'text',
+  memoryDate: 'memoryDate',
+  position: 'position',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1131,11 +1206,25 @@ export const MemoryMediaScalarFieldEnum = {
   memoryId: 'memoryId',
   mediaType: 'mediaType',
   storageKey: 'storageKey',
+  takenAt: 'takenAt',
+  description: 'description',
   position: 'position',
   createdAt: 'createdAt'
 } as const
 
 export type MemoryMediaScalarFieldEnum = (typeof MemoryMediaScalarFieldEnum)[keyof typeof MemoryMediaScalarFieldEnum]
+
+
+export const MemoryNoteScalarFieldEnum = {
+  id: 'id',
+  memoryId: 'memoryId',
+  text: 'text',
+  position: 'position',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MemoryNoteScalarFieldEnum = (typeof MemoryNoteScalarFieldEnum)[keyof typeof MemoryNoteScalarFieldEnum]
 
 
 export const EmailVerificationTokenScalarFieldEnum = {
@@ -1300,20 +1389,6 @@ export type EnumBoardMemberStatusFieldRefInput<$PrismaModel> = FieldRefInputType
  * Reference to a field of type 'BoardMemberStatus[]'
  */
 export type ListEnumBoardMemberStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BoardMemberStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'MemoryType'
- */
-export type EnumMemoryTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MemoryType'>
-    
-
-
-/**
- * Reference to a field of type 'MemoryType[]'
- */
-export type ListEnumMemoryTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MemoryType[]'>
     
 
 
@@ -1515,6 +1590,7 @@ export type GlobalOmitConfig = {
   boardMember?: Prisma.BoardMemberOmit
   memory?: Prisma.MemoryOmit
   memoryMedia?: Prisma.MemoryMediaOmit
+  memoryNote?: Prisma.MemoryNoteOmit
   emailVerificationToken?: Prisma.EmailVerificationTokenOmit
   userSession?: Prisma.UserSessionOmit
 }

@@ -14,10 +14,13 @@ import {
   deleteMemory,
 } from "../modules/memories/memory.service.js";
 
+const DEFAULT_MEMORY_DATE = "2026-01-15";
+
 /**
  * Cleans database tables before each test.
  */
 async function cleanDatabase() {
+  await prisma.memoryNote.deleteMany();
   await prisma.memoryMedia.deleteMany();
   await prisma.memory.deleteMany();
   await prisma.boardMember.deleteMany();
@@ -68,20 +71,20 @@ async function createBoardWithMembers(ownerId: string, partnerId: string) {
 }
 
 /**
- * Creates a memory directly in the database for testing.
+ * Creates a memory pin directly in the database for testing.
  */
 async function createMemoryRecord(
   boardId: string,
   authorId: string,
-  type: "NOTE" | "PHOTO" | "GIF" = "NOTE",
-  text: string | null = "Test memory",
+  position = 1,
+  memoryDate = DEFAULT_MEMORY_DATE,
 ) {
   return prisma.memory.create({
     data: {
       boardId,
       authorId,
-      type,
-      text: type === "NOTE" ? text : null,
+      position,
+      memoryDate: new Date(`${memoryDate}T00:00:00.000Z`),
     },
   });
 }
@@ -125,68 +128,126 @@ beforeEach(async () => {
 });
 
 describe("Memory service - createMemory()", () => {
-  it("creates a note memory", async () => {
+  it("creates a memory pin with its date and position", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
     const memory = await createMemory(owner.id, {
       boardId: board.id,
-      type: "NOTE",
-      text: "Our first memory",
+      memoryDate: "2026-03-15",
+      position: 1,
     });
 
     expect(memory.boardId).toBe(board.id);
     expect(memory.authorId).toBe(owner.id);
-    expect(memory.type).toBe("NOTE");
-    expect(memory.text).toBe("Our first memory");
+    expect(memory.position).toBe(1);
+    expect(memory.memoryDate.toISOString()).toBe("2026-03-15T00:00:00.000Z");
     expect(memory.author.name).toBe("Agustin");
     expect(memory.media).toHaveLength(0);
+    expect(memory.notes).toHaveLength(0);
   });
 
-  it("creates a photo memory", async () => {
-    const owner = await createUser("Agustin", "agustin@example.com");
-    const partner = await createUser("Mayra", "mayra@example.com");
-    const board = await createBoardWithMembers(owner.id, partner.id);
-
-    const memory = await createMemory(owner.id, {
-      boardId: board.id,
-      type: "PHOTO",
-    });
-
-    expect(memory.type).toBe("PHOTO");
-    expect(memory.text).toBeNull();
-    expect(memory.authorId).toBe(owner.id);
-  });
-
-  it("creates a GIF memory", async () => {
-    const owner = await createUser("Agustin", "agustin@example.com");
-    const partner = await createUser("Mayra", "mayra@example.com");
-    const board = await createBoardWithMembers(owner.id, partner.id);
-
-    const memory = await createMemory(owner.id, {
-      boardId: board.id,
-      type: "GIF",
-    });
-
-    expect(memory.type).toBe("GIF");
-    expect(memory.text).toBeNull();
-    expect(memory.authorId).toBe(owner.id);
-  });
-
-  it("allows the partner to create memories", async () => {
+  it("allows the partner to create memory pins", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
     const memory = await createMemory(partner.id, {
       boardId: board.id,
-      type: "NOTE",
-      text: "A memory from Mayra",
+      memoryDate: DEFAULT_MEMORY_DATE,
+      position: 1,
     });
 
     expect(memory.authorId).toBe(partner.id);
     expect(memory.author.name).toBe("Mayra");
+  });
+
+  it("allows creating pins in different positions", async () => {
+    const owner = await createUser("Agustin", "agustin@example.com");
+    const partner = await createUser("Mayra", "mayra@example.com");
+    const board = await createBoardWithMembers(owner.id, partner.id);
+
+    const first = await createMemory(owner.id, {
+      boardId: board.id,
+      memoryDate: "2026-01-10",
+      position: 1,
+    });
+
+    const second = await createMemory(owner.id, {
+      boardId: board.id,
+      memoryDate: "2026-01-20",
+      position: 2,
+    });
+
+    expect(first.position).toBe(1);
+    expect(second.position).toBe(2);
+  });
+
+  it("rejects duplicate positions within the same board", async () => {
+    const owner = await createUser("Agustin", "agustin@example.com");
+    const partner = await createUser("Mayra", "mayra@example.com");
+    const board = await createBoardWithMembers(owner.id, partner.id);
+
+    await createMemoryRecord(board.id, owner.id, 1);
+
+    await expect(
+      createMemory(owner.id, {
+        boardId: board.id,
+        memoryDate: DEFAULT_MEMORY_DATE,
+        position: 1,
+      }),
+    ).rejects.toThrow("MEMORY_POSITION_TAKEN");
+  });
+
+ it("allows the same position in different boards", async () => {
+  const owner = await createUser("Owner One", "owner-one@test.com");
+  const partner = await createUser("Partner One", "partner-one@test.com");
+  const secondOwner = await createUser("Owner Two", "owner-two@test.com");
+  const secondPartner = await createUser(
+    "Partner Two",
+    "partner-two@test.com",
+  );
+
+  const firstBoard = await createBoardWithMembers(
+    owner.id,
+    partner.id,
+  );
+
+  const secondBoard = await createBoardWithMembers(
+    secondOwner.id,
+    secondPartner.id,
+  );
+
+  const firstMemory = await createMemory(owner.id, {
+    boardId: firstBoard.id,
+    memoryDate: "2026-01-01",
+    position: 1,
+  });
+
+  const secondMemory = await createMemory(secondOwner.id, {
+    boardId: secondBoard.id,
+    memoryDate: "2026-01-01",
+    position: 1,
+  });
+
+  expect(firstMemory.position).toBe(1);
+  expect(secondMemory.position).toBe(1);
+  expect(firstMemory.boardId).not.toBe(secondMemory.boardId);
+});
+
+  it("allows creating a pin in the thirteenth position", async () => {
+    const owner = await createUser("Agustin", "agustin@example.com");
+    const partner = await createUser("Mayra", "mayra@example.com");
+    const board = await createBoardWithMembers(owner.id, partner.id);
+
+    const memory = await createMemory(owner.id, {
+      boardId: board.id,
+      memoryDate: DEFAULT_MEMORY_DATE,
+      position: 13,
+    });
+
+    expect(memory.position).toBe(13);
   });
 
   it("rejects users who are not active members of the board", async () => {
@@ -199,8 +260,8 @@ describe("Memory service - createMemory()", () => {
     await expect(
       createMemory(outsider.id, {
         boardId: board.id,
-        type: "NOTE",
-        text: "Unauthorized memory",
+        memoryDate: DEFAULT_MEMORY_DATE,
+        position: 1,
       }),
     ).rejects.toThrow("NOT_BOARD_MEMBER");
   });
@@ -211,13 +272,13 @@ describe("Memory service - createMemory()", () => {
     await expect(
       createMemory(user.id, {
         boardId: randomUUID(),
-        type: "NOTE",
-        text: "Test memory",
+        memoryDate: DEFAULT_MEMORY_DATE,
+        position: 1,
       }),
     ).rejects.toThrow("BOARD_NOT_FOUND");
   });
 
-  it("rejects creating memories in an archived board", async () => {
+  it("rejects creating pins in an archived board", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
 
@@ -234,130 +295,75 @@ describe("Memory service - createMemory()", () => {
     await expect(
       createMemory(owner.id, {
         boardId: board.id,
-        type: "NOTE",
-        text: "Test memory",
+        memoryDate: DEFAULT_MEMORY_DATE,
+        position: 1,
       }),
     ).rejects.toThrow("BOARD_NOT_FOUND");
-  });
-
-  it("rejects notes when the note limit is reached", async () => {
-    const owner = await createUser("Agustin", "agustin@example.com");
-    const partner = await createUser("Mayra", "mayra@example.com");
-    const board = await createBoardWithMembers(owner.id, partner.id);
-
-    for (let i = 0; i < 6; i++) {
-      await createMemoryRecord(board.id, owner.id, "NOTE", `Note ${i + 1}`);
-    }
-
-    await expect(
-      createMemory(owner.id, {
-        boardId: board.id,
-        type: "NOTE",
-        text: "Seventh note",
-      }),
-    ).rejects.toThrow("NOTE_LIMIT_REACHED");
-  });
-
-  it("rejects photos when the photo limit is reached", async () => {
-    const owner = await createUser("Agustin", "agustin@example.com");
-    const partner = await createUser("Mayra", "mayra@example.com");
-    const board = await createBoardWithMembers(owner.id, partner.id);
-
-    for (let i = 0; i < 6; i++) {
-      await createMemoryRecord(board.id, owner.id, "PHOTO");
-    }
-
-    await expect(
-      createMemory(owner.id, {
-        boardId: board.id,
-        type: "PHOTO",
-      }),
-    ).rejects.toThrow("PHOTO_LIMIT_REACHED");
-  });
-
-  it("rejects GIFs when the GIF limit is reached", async () => {
-    const owner = await createUser("Agustin", "agustin@example.com");
-    const partner = await createUser("Mayra", "mayra@example.com");
-    const board = await createBoardWithMembers(owner.id, partner.id);
-
-    await createMemoryRecord(board.id, owner.id, "GIF");
-
-    await expect(
-      createMemory(owner.id, {
-        boardId: board.id,
-        type: "GIF",
-      }),
-    ).rejects.toThrow("GIF_LIMIT_REACHED");
-  });
-
-  it("enforces limits independently for each memory type", async () => {
-    const owner = await createUser("Agustin", "agustin@example.com");
-    const partner = await createUser("Mayra", "mayra@example.com");
-    const board = await createBoardWithMembers(owner.id, partner.id);
-
-    for (let i = 0; i < 6; i++) {
-      await createMemoryRecord(board.id, owner.id, "NOTE", `Note ${i + 1}`);
-      await createMemoryRecord(board.id, owner.id, "PHOTO");
-    }
-
-    await createMemoryRecord(board.id, owner.id, "GIF");
-
-    const note = await createMemory(owner.id, {
-      boardId: board.id,
-      type: "GIF",
-    }).catch(() => null);
-
-    expect(note).toBeNull();
-
-    await expect(
-      createMemory(owner.id, {
-        boardId: board.id,
-        type: "NOTE",
-        text: "Another note",
-      }),
-    ).rejects.toThrow("NOTE_LIMIT_REACHED");
-
-    await expect(
-      createMemory(owner.id, {
-        boardId: board.id,
-        type: "PHOTO",
-      }),
-    ).rejects.toThrow("PHOTO_LIMIT_REACHED");
   });
 });
 
 describe("Memory service - getMemories()", () => {
-  it("retrieves all memories belonging to a board", async () => {
+  it("retrieves all memory pins belonging to a board", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    await createMemoryRecord(board.id, owner.id, "NOTE", "First note");
-    await createMemoryRecord(board.id, partner.id, "NOTE", "Second note");
-    await createMemoryRecord(board.id, owner.id, "PHOTO");
+    await createMemoryRecord(board.id, owner.id, 1);
+    await createMemoryRecord(board.id, partner.id, 2);
 
     const memories = await getMemories(owner.id, board.id);
 
-    expect(memories).toHaveLength(3);
+    expect(memories).toHaveLength(2);
     expect(memories.every((memory) => memory.boardId === board.id)).toBe(true);
     expect(memories[0].author).toBeDefined();
     expect(memories[0].media).toBeDefined();
+    expect(memories[0].notes).toBeDefined();
   });
 
-  it("retrieves memories for the partner", async () => {
+  it("returns pins ordered chronologically by memoryDate", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    await createMemoryRecord(board.id, owner.id, "NOTE", "Shared memory");
+    await createMemoryRecord(board.id, owner.id, 1, "2026-03-20");
+    await createMemoryRecord(board.id, partner.id, 2, "2026-01-10");
+    await createMemoryRecord(board.id, owner.id, 3, "2026-02-15");
+
+    const memories = await getMemories(owner.id, board.id);
+
+    expect(
+      memories.map((memory) => memory.memoryDate.toISOString().slice(0, 10)),
+    ).toEqual(["2026-01-10", "2026-02-15", "2026-03-20"]);
+  });
+
+  it("uses position to order pins with the same memoryDate", async () => {
+    const owner = await createUser("Agustin", "agustin@example.com");
+    const partner = await createUser("Mayra", "mayra@example.com");
+    const board = await createBoardWithMembers(owner.id, partner.id);
+
+    await createMemoryRecord(board.id, owner.id, 3, DEFAULT_MEMORY_DATE);
+    await createMemoryRecord(board.id, partner.id, 1, DEFAULT_MEMORY_DATE);
+    await createMemoryRecord(board.id, owner.id, 2, DEFAULT_MEMORY_DATE);
+
+    const memories = await getMemories(owner.id, board.id);
+
+    expect(memories.map((memory) => memory.position)).toEqual([1, 2, 3]);
+  });
+
+  it("retrieves pins for the partner", async () => {
+    const owner = await createUser("Agustin", "agustin@example.com");
+    const partner = await createUser("Mayra", "mayra@example.com");
+    const board = await createBoardWithMembers(owner.id, partner.id);
+
+    await createMemoryRecord(board.id, owner.id, 1);
 
     const memories = await getMemories(partner.id, board.id);
 
     expect(memories).toHaveLength(1);
-    expect(memories[0].text).toBe("Shared memory");
+    expect(memories[0].authorId).toBe(owner.id);
   });
 
-  it("returns an empty array when the board has no memories", async () => {
+  it("returns an empty array when the board has no pins", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
@@ -387,7 +393,7 @@ describe("Memory service - getMemories()", () => {
     );
   });
 
-  it("rejects retrieving memories from an archived board", async () => {
+  it("rejects retrieving pins from an archived board", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
@@ -407,27 +413,22 @@ describe("Memory service - getMemories()", () => {
 });
 
 describe("Memory service - getMemoryById()", () => {
-  it("retrieves a memory with its author and media", async () => {
+  it("retrieves a pin with its author, media and notes", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    const memory = await createMemoryRecord(
-      board.id,
-      owner.id,
-      "NOTE",
-      "Our memory",
-    );
+    const memory = await createMemoryRecord(board.id, owner.id);
 
     const result = await getMemoryById(owner.id, memory.id);
 
     expect(result.id).toBe(memory.id);
-    expect(result.text).toBe("Our memory");
     expect(result.author.name).toBe("Agustin");
     expect(result.media).toEqual([]);
+    expect(result.notes).toEqual([]);
   });
 
-  it("allows the partner to retrieve the memory", async () => {
+  it("allows the partner to retrieve a pin created by the owner", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
@@ -452,7 +453,7 @@ describe("Memory service - getMemoryById()", () => {
     );
   });
 
-  it("throws an error when the memory does not exist", async () => {
+  it("throws an error when the pin does not exist", async () => {
     const user = await createUser("Agustin", "agustin@example.com");
 
     await expect(getMemoryById(user.id, randomUUID())).rejects.toThrow(
@@ -462,68 +463,78 @@ describe("Memory service - getMemoryById()", () => {
 });
 
 describe("Memory service - updateMemory()", () => {
-  it("updates the text of a note", async () => {
+  it("updates a pin's memoryDate", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    const memory = await createMemoryRecord(
-      board.id,
-      owner.id,
-      "NOTE",
-      "Original text",
-    );
+    const memory = await createMemoryRecord(board.id, owner.id);
 
-    const result = await updateMemory(owner.id, memory.id, "Updated text");
+    const result = await updateMemory(owner.id, memory.id, {
+      memoryDate: "2026-05-20",
+    });
 
     expect(result.id).toBe(memory.id);
-    expect(result.text).toBe("Updated text");
+    expect(result.memoryDate.toISOString()).toBe("2026-05-20T00:00:00.000Z");
+    expect(result.position).toBe(1);
   });
 
-  it("allows the partner to update a note created by the owner", async () => {
+  it("updates a pin's position", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    const memory = await createMemoryRecord(
-      board.id,
-      owner.id,
-      "NOTE",
-      "Original text",
-    );
+    const memory = await createMemoryRecord(board.id, owner.id);
 
-    const result = await updateMemory(
-      partner.id,
-      memory.id,
-      "Updated by partner",
-    );
+    const result = await updateMemory(owner.id, memory.id, {
+      position: 5,
+    });
 
-    expect(result.text).toBe("Updated by partner");
+    expect(result.position).toBe(5);
+  });
+
+  it("updates both memoryDate and position", async () => {
+    const owner = await createUser("Agustin", "agustin@example.com");
+    const partner = await createUser("Mayra", "mayra@example.com");
+    const board = await createBoardWithMembers(owner.id, partner.id);
+
+    const memory = await createMemoryRecord(board.id, owner.id);
+
+    const result = await updateMemory(owner.id, memory.id, {
+      memoryDate: "2026-06-10",
+      position: 7,
+    });
+
+    expect(result.memoryDate.toISOString()).toBe("2026-06-10T00:00:00.000Z");
+    expect(result.position).toBe(7);
+  });
+
+  it("allows the partner to update a pin created by the owner", async () => {
+    const owner = await createUser("Agustin", "agustin@example.com");
+    const partner = await createUser("Mayra", "mayra@example.com");
+    const board = await createBoardWithMembers(owner.id, partner.id);
+
+    const memory = await createMemoryRecord(board.id, owner.id);
+
+    const result = await updateMemory(partner.id, memory.id, {
+      memoryDate: "2026-07-01",
+    });
+
+    expect(result.memoryDate.toISOString()).toBe("2026-07-01T00:00:00.000Z");
     expect(result.authorId).toBe(owner.id);
   });
 
-  it("rejects updating photo memories", async () => {
+  it("rejects updating a pin to an occupied position", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    const memory = await createMemoryRecord(board.id, owner.id, "PHOTO");
+    const first = await createMemoryRecord(board.id, owner.id, 1);
+    const second = await createMemoryRecord(board.id, owner.id, 2);
 
     await expect(
-      updateMemory(owner.id, memory.id, "Updated text"),
-    ).rejects.toThrow("MEMORY_NOT_EDITABLE");
-  });
-
-  it("rejects updating GIF memories", async () => {
-    const owner = await createUser("Agustin", "agustin@example.com");
-    const partner = await createUser("Mayra", "mayra@example.com");
-    const board = await createBoardWithMembers(owner.id, partner.id);
-
-    const memory = await createMemoryRecord(board.id, owner.id, "GIF");
-
-    await expect(
-      updateMemory(owner.id, memory.id, "Updated text"),
-    ).rejects.toThrow("MEMORY_NOT_EDITABLE");
+      updateMemory(owner.id, second.id, { position: first.position }),
+    ).rejects.toThrow("MEMORY_POSITION_TAKEN");
   });
 
   it("rejects users who are not active members of the board", async () => {
@@ -535,21 +546,25 @@ describe("Memory service - updateMemory()", () => {
     const memory = await createMemoryRecord(board.id, owner.id);
 
     await expect(
-      updateMemory(outsider.id, memory.id, "Unauthorized update"),
+      updateMemory(outsider.id, memory.id, {
+        memoryDate: "2026-08-01",
+      }),
     ).rejects.toThrow("NOT_BOARD_MEMBER");
   });
 
-  it("throws an error when the memory does not exist", async () => {
+  it("throws an error when the pin does not exist", async () => {
     const user = await createUser("Agustin", "agustin@example.com");
 
     await expect(
-      updateMemory(user.id, randomUUID(), "Updated text"),
+      updateMemory(user.id, randomUUID(), {
+        memoryDate: "2026-08-01",
+      }),
     ).rejects.toThrow("MEMORY_NOT_FOUND");
   });
 });
 
 describe("Memory service - deleteMemory()", () => {
-  it("deletes a memory created by the owner", async () => {
+  it("deletes a pin created by the owner", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
@@ -567,7 +582,47 @@ describe("Memory service - deleteMemory()", () => {
     expect(deletedMemory).toBeNull();
   });
 
-  it("allows the partner to delete a memory created by the owner", async () => {
+  it("deletes associated media and notes metadata through cascade", async () => {
+    const owner = await createUser("Agustin", "agustin@example.com");
+    const partner = await createUser("Mayra", "mayra@example.com");
+    const board = await createBoardWithMembers(owner.id, partner.id);
+
+    const memory = await createMemoryRecord(board.id, owner.id);
+
+    const media = await prisma.memoryMedia.create({
+      data: {
+        memoryId: memory.id,
+        mediaType: "PHOTO",
+        storageKey: "test/photo.jpg",
+        takenAt: new Date("2026-01-10T00:00:00.000Z"),
+        description: "A test photo",
+        position: 1,
+      },
+    });
+
+    const note = await prisma.memoryNote.create({
+      data: {
+        memoryId: memory.id,
+        text: "A test note",
+        position: 1,
+      },
+    });
+
+    await deleteMemory(owner.id, memory.id);
+
+    const deletedMedia = await prisma.memoryMedia.findUnique({
+      where: { id: media.id },
+    });
+
+    const deletedNote = await prisma.memoryNote.findUnique({
+      where: { id: note.id },
+    });
+
+    expect(deletedMedia).toBeNull();
+    expect(deletedNote).toBeNull();
+  });
+
+  it("allows the partner to delete a pin created by the owner", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
@@ -596,7 +651,7 @@ describe("Memory service - deleteMemory()", () => {
     );
   });
 
-  it("throws an error when the memory does not exist", async () => {
+  it("throws an error when the pin does not exist", async () => {
     const user = await createUser("Agustin", "agustin@example.com");
 
     await expect(deleteMemory(user.id, randomUUID())).rejects.toThrow(
@@ -606,7 +661,7 @@ describe("Memory service - deleteMemory()", () => {
 });
 
 describe("Memory routes - POST /api/v1/memories", () => {
-  it("creates a note memory", async () => {
+  it("creates a memory pin", async () => {
     const { agent, user: owner } = await createAuthenticatedUser(
       "Agustin",
       "agustin@example.com",
@@ -617,58 +672,22 @@ describe("Memory routes - POST /api/v1/memories", () => {
 
     const response = await agent.post("/api/v1/memories").send({
       boardId: board.id,
-      type: "NOTE",
-      text: "Our first memory",
+      memoryDate: "2026-03-15",
+      position: 1,
     });
 
     expect(response.status).toBe(201);
     expect(response.body.status).toBe("success");
-    expect(response.body.data.memory.type).toBe("NOTE");
-    expect(response.body.data.memory.text).toBe("Our first memory");
-  });
-
-  it("creates a photo memory", async () => {
-    const { agent, user: owner } = await createAuthenticatedUser(
-      "Agustin",
-      "agustin@example.com",
-    );
-
-    const partner = await createUser("Mayra", "mayra@example.com");
-    const board = await createBoardWithMembers(owner.id, partner.id);
-
-    const response = await agent.post("/api/v1/memories").send({
-      boardId: board.id,
-      type: "PHOTO",
-    });
-
-    expect(response.status).toBe(201);
-    expect(response.body.data.memory.type).toBe("PHOTO");
-    expect(response.body.data.memory.text).toBeNull();
-  });
-
-  it("creates a GIF memory", async () => {
-    const { agent, user: owner } = await createAuthenticatedUser(
-      "Agustin",
-      "agustin@example.com",
-    );
-
-    const partner = await createUser("Mayra", "mayra@example.com");
-    const board = await createBoardWithMembers(owner.id, partner.id);
-
-    const response = await agent.post("/api/v1/memories").send({
-      boardId: board.id,
-      type: "GIF",
-    });
-
-    expect(response.status).toBe(201);
-    expect(response.body.data.memory.type).toBe("GIF");
+    expect(response.body.data.memory.boardId).toBe(board.id);
+    expect(response.body.data.memory.position).toBe(1);
+    expect(response.body.data.memory.memoryDate).toContain("2026-03-15");
   });
 
   it("rejects requests without an authenticated session", async () => {
     const response = await request(app).post("/api/v1/memories").send({
       boardId: randomUUID(),
-      type: "NOTE",
-      text: "Unauthorized",
+      memoryDate: DEFAULT_MEMORY_DATE,
+      position: 1,
     });
 
     expect(response.status).toBe(401);
@@ -686,8 +705,8 @@ describe("Memory routes - POST /api/v1/memories", () => {
 
     const response = await agent.post("/api/v1/memories").send({
       boardId: board.id,
-      type: "NOTE",
-      text: "Unverified user",
+      memoryDate: DEFAULT_MEMORY_DATE,
+      position: 1,
     });
 
     expect(response.status).toBe(403);
@@ -701,14 +720,14 @@ describe("Memory routes - POST /api/v1/memories", () => {
 
     const response = await agent.post("/api/v1/memories").send({
       boardId: "invalid-id",
-      type: "NOTE",
-      text: "Invalid memory",
+      memoryDate: DEFAULT_MEMORY_DATE,
+      position: 1,
     });
 
     expect(response.status).toBe(400);
   });
 
-  it("rejects notes without text", async () => {
+  it("rejects invalid calendar dates", async () => {
     const { agent, user: owner } = await createAuthenticatedUser(
       "Agustin",
       "agustin@example.com",
@@ -719,13 +738,14 @@ describe("Memory routes - POST /api/v1/memories", () => {
 
     const response = await agent.post("/api/v1/memories").send({
       boardId: board.id,
-      type: "NOTE",
+      memoryDate: "2026-02-30",
+      position: 1,
     });
 
     expect(response.status).toBe(400);
   });
 
-  it("rejects media memories containing text", async () => {
+  it("rejects positions outside the allowed range", async () => {
     const { agent, user: owner } = await createAuthenticatedUser(
       "Agustin",
       "agustin@example.com",
@@ -736,8 +756,21 @@ describe("Memory routes - POST /api/v1/memories", () => {
 
     const response = await agent.post("/api/v1/memories").send({
       boardId: board.id,
-      type: "PHOTO",
-      text: "This should not be allowed",
+      memoryDate: DEFAULT_MEMORY_DATE,
+      position: 14,
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects requests with missing fields", async () => {
+    const { agent } = await createAuthenticatedUser(
+      "Agustin",
+      "agustin@example.com",
+    );
+
+    const response = await agent.post("/api/v1/memories").send({
+      boardId: randomUUID(),
     });
 
     expect(response.status).toBe(400);
@@ -755,14 +788,14 @@ describe("Memory routes - POST /api/v1/memories", () => {
 
     const response = await agent.post("/api/v1/memories").send({
       boardId: board.id,
-      type: "NOTE",
-      text: "Unauthorized memory",
+      memoryDate: DEFAULT_MEMORY_DATE,
+      position: 1,
     });
 
     expect(response.status).toBe(403);
   });
 
-  it("returns 409 when the note limit is reached", async () => {
+  it("returns 409 when the selected position is occupied", async () => {
     const { agent, user: owner } = await createAuthenticatedUser(
       "Agustin",
       "agustin@example.com",
@@ -771,14 +804,12 @@ describe("Memory routes - POST /api/v1/memories", () => {
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    for (let i = 0; i < 6; i++) {
-      await createMemoryRecord(board.id, owner.id, "NOTE", `Note ${i + 1}`);
-    }
+    await createMemoryRecord(board.id, owner.id, 1);
 
     const response = await agent.post("/api/v1/memories").send({
       boardId: board.id,
-      type: "NOTE",
-      text: "Seventh note",
+      memoryDate: DEFAULT_MEMORY_DATE,
+      position: 1,
     });
 
     expect(response.status).toBe(409);
@@ -787,7 +818,7 @@ describe("Memory routes - POST /api/v1/memories", () => {
 });
 
 describe("Memory routes - GET /api/v1/memories/board/:boardId", () => {
-  it("retrieves all memories for a board", async () => {
+  it("retrieves all memory pins for a board", async () => {
     const { agent, user: owner } = await createAuthenticatedUser(
       "Agustin",
       "agustin@example.com",
@@ -796,8 +827,8 @@ describe("Memory routes - GET /api/v1/memories/board/:boardId", () => {
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    await createMemoryRecord(board.id, owner.id, "NOTE", "First note");
-    await createMemoryRecord(board.id, partner.id, "PHOTO");
+    await createMemoryRecord(board.id, owner.id, 1);
+    await createMemoryRecord(board.id, partner.id, 2);
 
     const response = await agent.get(`/api/v1/memories/board/${board.id}`);
 
@@ -827,7 +858,7 @@ describe("Memory routes - GET /api/v1/memories/board/:boardId", () => {
 });
 
 describe("Memory routes - GET /api/v1/memories/:id", () => {
-  it("retrieves a specific memory", async () => {
+  it("retrieves a specific memory pin", async () => {
     const { agent, user: owner } = await createAuthenticatedUser(
       "Agustin",
       "agustin@example.com",
@@ -836,19 +867,14 @@ describe("Memory routes - GET /api/v1/memories/:id", () => {
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    const memory = await createMemoryRecord(
-      board.id,
-      owner.id,
-      "NOTE",
-      "Our memory",
-    );
+    const memory = await createMemoryRecord(board.id, owner.id);
 
     const response = await agent.get(`/api/v1/memories/${memory.id}`);
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe("success");
     expect(response.body.data.memory.id).toBe(memory.id);
-    expect(response.body.data.memory.text).toBe("Our memory");
+    expect(response.body.data.memory.position).toBe(1);
   });
 
   it("returns 404 when the memory does not exist", async () => {
@@ -881,7 +907,7 @@ describe("Memory routes - GET /api/v1/memories/:id", () => {
 });
 
 describe("Memory routes - PATCH /api/v1/memories/:id", () => {
-  it("updates a note memory", async () => {
+  it("updates a pin's memoryDate", async () => {
     const { agent, user: owner } = await createAuthenticatedUser(
       "Agustin",
       "agustin@example.com",
@@ -890,22 +916,49 @@ describe("Memory routes - PATCH /api/v1/memories/:id", () => {
     const partner = await createUser("Mayra", "mayra@example.com");
     const board = await createBoardWithMembers(owner.id, partner.id);
 
-    const memory = await createMemoryRecord(
-      board.id,
-      owner.id,
-      "NOTE",
-      "Original text",
-    );
+    const memory = await createMemoryRecord(board.id, owner.id);
 
     const response = await agent.patch(`/api/v1/memories/${memory.id}`).send({
-      text: "Updated text",
+      memoryDate: "2026-04-20",
     });
 
     expect(response.status).toBe(200);
-    expect(response.body.data.memory.text).toBe("Updated text");
+    expect(response.body.data.memory.memoryDate).toContain("2026-04-20");
   });
 
-  it("rejects updating a memory with invalid text", async () => {
+  it("updates a pin's position", async () => {
+    const { agent, user: owner } = await createAuthenticatedUser(
+      "Agustin",
+      "agustin@example.com",
+    );
+
+    const partner = await createUser("Mayra", "mayra@example.com");
+    const board = await createBoardWithMembers(owner.id, partner.id);
+
+    const memory = await createMemoryRecord(board.id, owner.id);
+
+    const response = await agent.patch(`/api/v1/memories/${memory.id}`).send({
+      position: 5,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.memory.position).toBe(5);
+  });
+
+  it("rejects updates without any fields", async () => {
+    const { agent } = await createAuthenticatedUser(
+      "Agustin",
+      "agustin@example.com",
+    );
+
+    const response = await agent
+      .patch(`/api/v1/memories/${randomUUID()}`)
+      .send({});
+
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects updates with invalid dates", async () => {
     const { agent } = await createAuthenticatedUser(
       "Agustin",
       "agustin@example.com",
@@ -914,7 +967,22 @@ describe("Memory routes - PATCH /api/v1/memories/:id", () => {
     const response = await agent
       .patch(`/api/v1/memories/${randomUUID()}`)
       .send({
-        text: "",
+        memoryDate: "2026-02-30",
+      });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("rejects updates with positions outside the allowed range", async () => {
+    const { agent } = await createAuthenticatedUser(
+      "Agustin",
+      "agustin@example.com",
+    );
+
+    const response = await agent
+      .patch(`/api/v1/memories/${randomUUID()}`)
+      .send({
+        position: 14,
       });
 
     expect(response.status).toBe(400);
@@ -924,7 +992,7 @@ describe("Memory routes - PATCH /api/v1/memories/:id", () => {
     const response = await request(app)
       .patch(`/api/v1/memories/${randomUUID()}`)
       .send({
-        text: "Updated text",
+        memoryDate: "2026-04-20",
       });
 
     expect(response.status).toBe(401);
@@ -932,7 +1000,7 @@ describe("Memory routes - PATCH /api/v1/memories/:id", () => {
 });
 
 describe("Memory routes - DELETE /api/v1/memories/:id", () => {
-  it("deletes a memory", async () => {
+  it("deletes a memory pin", async () => {
     const { agent, user: owner } = await createAuthenticatedUser(
       "Agustin",
       "agustin@example.com",
@@ -956,7 +1024,7 @@ describe("Memory routes - DELETE /api/v1/memories/:id", () => {
     expect(deletedMemory).toBeNull();
   });
 
-  it("allows the partner to delete a memory created by the owner", async () => {
+  it("allows the partner to delete a pin created by the owner", async () => {
     const owner = await createUser("Agustin", "agustin@example.com");
 
     const { agent, user: partner } = await createAuthenticatedUser(

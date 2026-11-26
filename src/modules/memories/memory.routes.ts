@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 
 import { requireVerifiedEmail } from "../../middlewares/require-verified-email.js";
@@ -21,7 +20,7 @@ import {
 
 const router = Router();
 
-// Create a memory in an active board.
+// Create a memory pin in an active board.
 router.post(
   "/",
   requireVerifiedEmail,
@@ -29,7 +28,7 @@ router.post(
   createMemoryController,
 );
 
-// Retrieve all memories belonging to a board.
+// Retrieve all memory pins belonging to a board.
 router.get(
   "/board/:boardId",
   requireVerifiedEmail,
@@ -37,7 +36,7 @@ router.get(
   getMemoriesController,
 );
 
-// Retrieve a specific memory.
+// Retrieve a specific memory pin.
 router.get(
   "/:id",
   requireVerifiedEmail,
@@ -45,7 +44,7 @@ router.get(
   getMemoryByIdController,
 );
 
-// Update a note memory.
+// Update a memory pin's date or position.
 router.patch(
   "/:id",
   requireVerifiedEmail,
@@ -56,7 +55,7 @@ router.patch(
   updateMemoryController,
 );
 
-// Delete a memory.
+// Delete a memory pin.
 router.delete(
   "/:id",
   requireVerifiedEmail,

@@ -44,15 +44,6 @@ export const BoardMemberStatus = {
 export type BoardMemberStatus = (typeof BoardMemberStatus)[keyof typeof BoardMemberStatus]
 
 
-export const MemoryType = {
-  NOTE: 'NOTE',
-  PHOTO: 'PHOTO',
-  GIF: 'GIF'
-} as const
-
-export type MemoryType = (typeof MemoryType)[keyof typeof MemoryType]
-
-
 export const MediaType = {
   PHOTO: 'PHOTO',
   GIF: 'GIF'

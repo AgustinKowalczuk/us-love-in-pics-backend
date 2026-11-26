@@ -1,161 +1,101 @@
-import { prisma } from "../../config/prisma.js";
 
-const MEMORY_LIMITS = {
-  NOTE: 6,
-  PHOTO: 6,
-  GIF: 1,
-} as const;
+import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/client.js";
+import {
+  lockBoard,
+  validateBoardAccess,
+} from "./memory-access.js";
+
+interface CreateMemoryData {
+  boardId: string;
+  memoryDate: string;
+  position: number;
+}
+
+interface UpdateMemoryData {
+  memoryDate?: string;
+  position?: number;
+}
 
 /**
- * Creates a memory after validating board membership and content limits.
- *
- * The board row is locked to prevent concurrent requests from exceeding
- * the configured limit for each memory type.
+ * Checks whether a Prisma error represents a unique constraint violation.
+ */
+function isPrismaUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
+  );
+}
+
+/**
+ * Converts a date-only string into a UTC date value.
+ */
+function toDateOnly(value: string): Date {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
+/**
+ * Creates a memory pin after validating board access.
  */
 export async function createMemory(
   userId: string,
-  data: {
-    boardId: string;
-    type: "NOTE" | "PHOTO" | "GIF";
-    text?: string | null;
-  },
+  data: CreateMemoryData,
 ) {
-  return prisma.$transaction(async (tx) => {
-    // Lock the board to serialize memory creation requests.
-    await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id
-      FROM boards
-      WHERE id = ${data.boardId}::uuid
-      FOR UPDATE
-    `;
+  try {
+    return await prisma.$transaction(async (tx) => {
+      await lockBoard(tx, data.boardId, "UPDATE");
+      await validateBoardAccess(tx, userId, data.boardId);
 
-    const board = await tx.board.findFirst({
-      where: {
-        id: data.boardId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!board) {
-      throw new Error("BOARD_NOT_FOUND");
-    }
-
-    const membership = await tx.boardMember.findFirst({
-      where: {
-        boardId: data.boardId,
-        userId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!membership) {
-      throw new Error("NOT_BOARD_MEMBER");
-    }
-
-    // Count existing memories of the requested type.
-    const existingCount = await tx.memory.count({
-      where: {
-        boardId: data.boardId,
-        type: data.type,
-      },
-    });
-
-    if (existingCount >= MEMORY_LIMITS[data.type]) {
-      throw new Error(`${data.type}_LIMIT_REACHED`);
-    }
-
-    return tx.memory.create({
-      data: {
-        boardId: data.boardId,
-        authorId: userId,
-        type: data.type,
-        text: data.type === "NOTE" ? data.text! : null,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
+      return tx.memory.create({
+        data: {
+          boardId: data.boardId,
+          authorId: userId,
+          memoryDate: toDateOnly(data.memoryDate),
+          position: data.position,
+        },
+        include: {
+          author: true,
+          media: {
+            orderBy: { position: "asc" },
+          },
+          notes: {
+            orderBy: { position: "asc" },
           },
         },
-        media: {
-          orderBy: {
-            position: "asc",
-          },
-        },
-      },
+      });
     });
-  });
+  } catch (error) {
+    if (isPrismaUniqueConstraintError(error)) {
+      throw new Error("MEMORY_POSITION_TAKEN");
+    }
+
+    throw error;
+  }
 }
 
 /**
- * Retrieves all memories belonging to an active board.
- *
- * Only active board members can access its memories.
+ * Retrieves all memory pins belonging to a board.
  */
 export async function getMemories(userId: string, boardId: string) {
   return prisma.$transaction(async (tx) => {
-    // Prevent the board from being archived during retrieval.
-    await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id
-      FROM boards
-      WHERE id = ${boardId}::uuid
-      FOR SHARE
-    `;
-
-    const board = await tx.board.findFirst({
-      where: {
-        id: boardId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!board) {
-      throw new Error("BOARD_NOT_FOUND");
-    }
-
-    const membership = await tx.boardMember.findFirst({
-      where: {
-        boardId,
-        userId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!membership) {
-      throw new Error("NOT_BOARD_MEMBER");
-    }
+    await lockBoard(tx, boardId, "SHARE");
+    await validateBoardAccess(tx, userId, boardId);
 
     return tx.memory.findMany({
-      where: {
-        boardId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+      where: { boardId },
+      orderBy: [
+        { memoryDate: "asc" },
+        { position: "asc" },
+      ],
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        author: true,
         media: {
-          orderBy: {
-            position: "asc",
-          },
+          orderBy: { position: "asc" },
+        },
+        notes: {
+          orderBy: { position: "asc" },
         },
       },
     });
@@ -163,246 +103,120 @@ export async function getMemories(userId: string, boardId: string) {
 }
 
 /**
- * Retrieves a memory if the user is an active member of its board.
+ * Retrieves a memory pin after validating board access.
  */
-export async function getMemoryById(userId: string, memoryId: string) {
-  const memory = await prisma.memory.findUnique({
-    where: {
-      id: memoryId,
-    },
-    select: {
-      boardId: true,
-    },
-  });
-
-  if (!memory) {
-    throw new Error("MEMORY_NOT_FOUND");
-  }
-
-  return prisma.$transaction(async (tx) => {
-    // Prevent the board from being archived during retrieval.
-    await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id
-      FROM boards
-      WHERE id = ${memory.boardId}::uuid
-      FOR SHARE
-    `;
-
-    const board = await tx.board.findFirst({
-      where: {
-        id: memory.boardId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!board) {
-      throw new Error("BOARD_NOT_FOUND");
-    }
-
-    const membership = await tx.boardMember.findFirst({
-      where: {
-        boardId: memory.boardId,
-        userId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!membership) {
-      throw new Error("NOT_BOARD_MEMBER");
-    }
-
-    return tx.memory.findUniqueOrThrow({
-      where: {
-        id: memoryId,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        media: {
-          orderBy: {
-            position: "asc",
-          },
-        },
-      },
-    });
-  });
-}
-
-/**
- * Updates a memory's text.
- *
- * Any active board member can update a note.
- * Media memories cannot be updated through this operation.
- */
-export async function updateMemory(
+export async function getMemoryById(
   userId: string,
   memoryId: string,
-  text: string,
 ) {
-  const initialMemory = await prisma.memory.findUnique({
-    where: {
-      id: memoryId,
-    },
-    select: {
-      boardId: true,
-    },
-  });
-
-  if (!initialMemory) {
-    throw new Error("MEMORY_NOT_FOUND");
-  }
-
   return prisma.$transaction(async (tx) => {
-    // Serialize memory modifications with board archival.
-    await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id
-      FROM boards
-      WHERE id = ${initialMemory.boardId}::uuid
-      FOR UPDATE
-    `;
-
-    const board = await tx.board.findFirst({
-      where: {
-        id: initialMemory.boardId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!board) {
-      throw new Error("BOARD_NOT_FOUND");
-    }
-
-    const membership = await tx.boardMember.findFirst({
-      where: {
-        boardId: initialMemory.boardId,
-        userId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!membership) {
-      throw new Error("NOT_BOARD_MEMBER");
-    }
-
     const memory = await tx.memory.findUnique({
-      where: {
-        id: memoryId,
-      },
-      select: {
-        type: true,
-      },
+      where: { id: memoryId },
+      select: { boardId: true },
     });
 
     if (!memory) {
       throw new Error("MEMORY_NOT_FOUND");
     }
 
-    if (memory.type !== "NOTE") {
-      throw new Error("MEMORY_NOT_EDITABLE");
-    }
+    await lockBoard(tx, memory.boardId, "SHARE");
+    await validateBoardAccess(tx, userId, memory.boardId);
 
-    return tx.memory.update({
-      where: {
-        id: memoryId,
-      },
-      data: {
-        text,
-      },
+    const result = await tx.memory.findUnique({
+      where: { id: memoryId },
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        author: true,
         media: {
-          orderBy: {
-            position: "asc",
-          },
+          orderBy: { position: "asc" },
+        },
+        notes: {
+          orderBy: { position: "asc" },
         },
       },
     });
+
+    if (!result) {
+      throw new Error("MEMORY_NOT_FOUND");
+    }
+
+    return result;
   });
 }
 
 /**
- * Deletes a memory if the user is an active member of its board.
- *
- * Associated MemoryMedia records are deleted through the database
- * cascade relation.
+ * Updates a memory pin's date and/or timeline position.
  */
-export async function deleteMemory(userId: string, memoryId: string) {
-  const initialMemory = await prisma.memory.findUnique({
-    where: {
-      id: memoryId,
-    },
-    select: {
-      boardId: true,
-    },
-  });
+export async function updateMemory(
+  userId: string,
+  memoryId: string,
+  data: UpdateMemoryData,
+) {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const memory = await tx.memory.findUnique({
+        where: { id: memoryId },
+        select: { boardId: true },
+      });
 
-  if (!initialMemory) {
-    throw new Error("MEMORY_NOT_FOUND");
+      if (!memory) {
+        throw new Error("MEMORY_NOT_FOUND");
+      }
+
+      await lockBoard(tx, memory.boardId, "UPDATE");
+      await validateBoardAccess(tx, userId, memory.boardId);
+
+      return tx.memory.update({
+        where: { id: memoryId },
+        data: {
+          ...(data.memoryDate !== undefined && {
+            memoryDate: toDateOnly(data.memoryDate),
+          }),
+          ...(data.position !== undefined && {
+            position: data.position,
+          }),
+        },
+        include: {
+          author: true,
+          media: {
+            orderBy: { position: "asc" },
+          },
+          notes: {
+            orderBy: { position: "asc" },
+          },
+        },
+      });
+    });
+  } catch (error) {
+    if (isPrismaUniqueConstraintError(error)) {
+      throw new Error("MEMORY_POSITION_TAKEN");
+    }
+
+    throw error;
   }
+}
 
+/**
+ * Deletes a memory pin and its related media and notes metadata.
+ */
+export async function deleteMemory(
+  userId: string,
+  memoryId: string,
+) {
   return prisma.$transaction(async (tx) => {
-    // Serialize memory deletion with board archival.
-    await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id
-      FROM boards
-      WHERE id = ${initialMemory.boardId}::uuid
-      FOR UPDATE
-    `;
-
-    const board = await tx.board.findFirst({
-      where: {
-        id: initialMemory.boardId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
+    const memory = await tx.memory.findUnique({
+      where: { id: memoryId },
+      select: { boardId: true },
     });
 
-    if (!board) {
-      throw new Error("BOARD_NOT_FOUND");
+    if (!memory) {
+      throw new Error("MEMORY_NOT_FOUND");
     }
 
-    const membership = await tx.boardMember.findFirst({
-      where: {
-        boardId: initialMemory.boardId,
-        userId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!membership) {
-      throw new Error("NOT_BOARD_MEMBER");
-    }
+    await lockBoard(tx, memory.boardId, "UPDATE");
+    await validateBoardAccess(tx, userId, memory.boardId);
 
     return tx.memory.delete({
-      where: {
-        id: memoryId,
-      },
+      where: { id: memoryId },
     });
   });
 }
