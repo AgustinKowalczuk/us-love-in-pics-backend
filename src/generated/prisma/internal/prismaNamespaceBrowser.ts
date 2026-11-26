@@ -57,6 +57,7 @@ export const ModelName = {
   BoardMember: 'BoardMember',
   Memory: 'Memory',
   MemoryMedia: 'MemoryMedia',
+  MemoryNote: 'MemoryNote',
   EmailVerificationToken: 'EmailVerificationToken',
   UserSession: 'UserSession'
 } as const
@@ -139,8 +140,8 @@ export const MemoryScalarFieldEnum = {
   id: 'id',
   boardId: 'boardId',
   authorId: 'authorId',
-  type: 'type',
-  text: 'text',
+  memoryDate: 'memoryDate',
+  position: 'position',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -153,11 +154,25 @@ export const MemoryMediaScalarFieldEnum = {
   memoryId: 'memoryId',
   mediaType: 'mediaType',
   storageKey: 'storageKey',
+  takenAt: 'takenAt',
+  description: 'description',
   position: 'position',
   createdAt: 'createdAt'
 } as const
 
 export type MemoryMediaScalarFieldEnum = (typeof MemoryMediaScalarFieldEnum)[keyof typeof MemoryMediaScalarFieldEnum]
+
+
+export const MemoryNoteScalarFieldEnum = {
+  id: 'id',
+  memoryId: 'memoryId',
+  text: 'text',
+  position: 'position',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type MemoryNoteScalarFieldEnum = (typeof MemoryNoteScalarFieldEnum)[keyof typeof MemoryNoteScalarFieldEnum]
 
 
 export const EmailVerificationTokenScalarFieldEnum = {

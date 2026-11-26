@@ -72,6 +72,11 @@ export type Memory = Prisma.MemoryModel
  */
 export type MemoryMedia = Prisma.MemoryMediaModel
 /**
+ * Model MemoryNote
+ * 
+ */
+export type MemoryNote = Prisma.MemoryNoteModel
+/**
  * Model EmailVerificationToken
  * 
  */

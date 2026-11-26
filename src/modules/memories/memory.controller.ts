@@ -38,21 +38,9 @@ function handleMemoryError(
       statusCode: 404,
       message: "Memory not found",
     },
-    NOTE_LIMIT_REACHED: {
+    MEMORY_POSITION_TAKEN: {
       statusCode: 409,
-      message: "The board has reached its note limit",
-    },
-    PHOTO_LIMIT_REACHED: {
-      statusCode: 409,
-      message: "The board has reached its photo limit",
-    },
-    GIF_LIMIT_REACHED: {
-      statusCode: 409,
-      message: "The board has reached its GIF limit",
-    },
-    MEMORY_NOT_EDITABLE: {
-      statusCode: 409,
-      message: "Only note memories can be updated",
+      message: "The selected memory position is already occupied",
     },
   };
 
@@ -70,7 +58,7 @@ function handleMemoryError(
 }
 
 /**
- * Creates a memory in an active board.
+ * Creates a memory pin in an active board.
  */
 export const createMemoryController: RequestHandler = async (
   req,
@@ -88,39 +76,18 @@ export const createMemoryController: RequestHandler = async (
   }
 
   try {
-    const { boardId, type, text } = req.body;
-
-    if (
-      typeof boardId !== "string" ||
-      !["NOTE", "PHOTO", "GIF"].includes(type)
-    ) {
-      res.status(400).json({
-        status: "error",
-        message: "Invalid memory data",
-      });
-      return;
-    }
-
-    if (type === "NOTE" && typeof text !== "string") {
-      res.status(400).json({
-        status: "error",
-        message: "Note text is required",
-      });
-      return;
-    }
+    const { boardId, memoryDate, position } = req.body;
 
     const memory = await createMemory(userId, {
       boardId,
-      type,
-      text,
+      memoryDate,
+      position,
     });
 
     res.status(201).json({
       status: "success",
       message: "Memory created successfully",
-      data: {
-        memory,
-      },
+      data: { memory },
     });
   } catch (error) {
     handleMemoryError(error, next, res);
@@ -128,7 +95,7 @@ export const createMemoryController: RequestHandler = async (
 };
 
 /**
- * Retrieves all memories belonging to a board.
+ * Retrieves all memory pins belonging to a board.
  */
 export const getMemoriesController: RequestHandler = async (
   req,
@@ -148,22 +115,12 @@ export const getMemoriesController: RequestHandler = async (
   try {
     const boardId = req.params.boardId;
 
-    if (typeof boardId !== "string") {
-      res.status(400).json({
-        status: "error",
-        message: "Invalid board ID",
-      });
-      return;
-    }
-
-    const memories = await getMemories(userId, boardId);
+    const memories = await getMemories(userId, boardId as string);
 
     res.status(200).json({
       status: "success",
       message: "Memories retrieved successfully",
-      data: {
-        memories,
-      },
+      data: { memories },
     });
   } catch (error) {
     handleMemoryError(error, next, res);
@@ -171,7 +128,7 @@ export const getMemoriesController: RequestHandler = async (
 };
 
 /**
- * Retrieves a specific memory.
+ * Retrieves a specific memory pin.
  */
 export const getMemoryByIdController: RequestHandler = async (
   req,
@@ -191,22 +148,12 @@ export const getMemoryByIdController: RequestHandler = async (
   try {
     const memoryId = req.params.id;
 
-    if (typeof memoryId !== "string") {
-      res.status(400).json({
-        status: "error",
-        message: "Invalid memory ID",
-      });
-      return;
-    }
-
-    const memory = await getMemoryById(userId, memoryId);
+    const memory = await getMemoryById(userId, memoryId as string);
 
     res.status(200).json({
       status: "success",
       message: "Memory retrieved successfully",
-      data: {
-        memory,
-      },
+      data: { memory },
     });
   } catch (error) {
     handleMemoryError(error, next, res);
@@ -214,7 +161,7 @@ export const getMemoryByIdController: RequestHandler = async (
 };
 
 /**
- * Updates the text of a note memory.
+ * Updates a memory pin's date and/or position.
  */
 export const updateMemoryController: RequestHandler = async (
   req,
@@ -233,32 +180,17 @@ export const updateMemoryController: RequestHandler = async (
 
   try {
     const memoryId = req.params.id;
-    const { text } = req.body;
+    const { memoryDate, position } = req.body;
 
-    if (typeof memoryId !== "string") {
-      res.status(400).json({
-        status: "error",
-        message: "Invalid memory ID",
-      });
-      return;
-    }
-
-    if (typeof text !== "string") {
-      res.status(400).json({
-        status: "error",
-        message: "Note text is required",
-      });
-      return;
-    }
-
-    const memory = await updateMemory(userId, memoryId, text);
+    const memory = await updateMemory(userId, memoryId as string, {
+      ...(memoryDate !== undefined && { memoryDate }),
+      ...(position !== undefined && { position }),
+    });
 
     res.status(200).json({
       status: "success",
       message: "Memory updated successfully",
-      data: {
-        memory,
-      },
+      data: { memory },
     });
   } catch (error) {
     handleMemoryError(error, next, res);
@@ -266,7 +198,7 @@ export const updateMemoryController: RequestHandler = async (
 };
 
 /**
- * Deletes a memory and its associated media metadata.
+ * Deletes a memory pin and its associated content metadata.
  */
 export const deleteMemoryController: RequestHandler = async (
   req,
@@ -286,22 +218,12 @@ export const deleteMemoryController: RequestHandler = async (
   try {
     const memoryId = req.params.id;
 
-    if (typeof memoryId !== "string") {
-      res.status(400).json({
-        status: "error",
-        message: "Invalid memory ID",
-      });
-      return;
-    }
-
-    const memory = await deleteMemory(userId, memoryId);
+    const memory = await deleteMemory(userId, memoryId as string);
 
     res.status(200).json({
       status: "success",
       message: "Memory deleted successfully",
-      data: {
-        memory,
-      },
+      data: { memory },
     });
   } catch (error) {
     handleMemoryError(error, next, res);

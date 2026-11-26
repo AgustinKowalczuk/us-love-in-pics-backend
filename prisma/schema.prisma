@@ -30,12 +30,6 @@ enum BoardMemberStatus {
   ARCHIVED
 }
 
-enum MemoryType {
-  NOTE
-  PHOTO
-  GIF
-}
-
 enum MediaType {
   PHOTO
   GIF
@@ -120,35 +114,54 @@ model BoardMember {
 }
 
 model Memory {
-  id        String     @id @default(uuid()) @db.Uuid
-  boardId   String     @map("board_id") @db.Uuid
-  authorId  String     @map("author_id") @db.Uuid
-  type      MemoryType
-  text      String?    @db.Text
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
+  id         String   @id @default(uuid()) @db.Uuid
+  boardId    String   @map("board_id") @db.Uuid
+  authorId   String   @map("author_id") @db.Uuid
+  memoryDate DateTime @map("memory_date") @db.Date
+  position   Int
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   board  Board         @relation(fields: [boardId], references: [id], onDelete: Restrict)
   author User          @relation(fields: [authorId], references: [id], onDelete: Restrict)
   media  MemoryMedia[]
+  notes  MemoryNote[]
 
-  @@index([boardId, createdAt])
+  @@unique([boardId, position])
+  @@index([boardId, memoryDate])
   @@index([authorId])
   @@map("memories")
 }
 
 model MemoryMedia {
-  id         String    @id @default(uuid()) @db.Uuid
-  memoryId   String    @map("memory_id") @db.Uuid
-  mediaType  MediaType @map("media_type")
-  storageKey String    @map("storage_key") @db.VarChar(500)
-  position   Int       @default(0)
-  createdAt  DateTime  @default(now()) @map("created_at")
+  id          String    @id @default(uuid()) @db.Uuid
+  memoryId    String    @map("memory_id") @db.Uuid
+  mediaType   MediaType @map("media_type")
+  storageKey  String    @map("storage_key") @db.VarChar(500)
+  takenAt     DateTime? @map("taken_at") @db.Date
+  description String?   @db.VarChar(500)
+  position    Int
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
 
-  @@index([memoryId, position])
+  @@unique([memoryId, position])
+  @@index([memoryId, mediaType])
   @@map("memory_media")
+}
+
+model MemoryNote {
+  id        String   @id @default(uuid()) @db.Uuid
+  memoryId  String   @map("memory_id") @db.Uuid
+  text      String   @db.VarChar(1000)
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@unique([memoryId, position])
+  @@map("memory_notes")
 }
 
 model EmailVerificationToken {
